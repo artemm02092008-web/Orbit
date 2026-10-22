@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
+import { AnimatedLogo } from "../components/AnimatedLogo";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";

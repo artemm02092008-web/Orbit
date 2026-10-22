@@ -1,43 +1,62 @@
-import React, { useState, useEffect } from "react";
 import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  Image,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  MaterialCommunityIcons,
-  Ionicons,
   Feather,
   FontAwesome5,
+  Ionicons,
+  MaterialCommunityIcons,
 } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase/config";
-import { COLORS } from "../theme/colors";
-import i18n from "../i18n";
+import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
+import { auth, db } from "../firebase/config";
+import i18n from "../i18n";
 
 export const ProfileScreen = () => {
   const router = useRouter();
-  // Добавили themeColors из контекста
-  const { isPremium, userData, themeColors } = useApp();
-  const [user, setUser] = useState(null);
+  const { isPremium, userData, setUserFrame, themeColors, updateAvatar } =
+    useApp() || {};
+  const primary = themeColors?.primary || "#7C6AFA";
 
-  // Цвет темы (по умолчанию фиолетовый)
-  const primary = themeColors?.primary || COLORS.primary;
+  const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("main");
+  const [customStatus, setCustomStatus] = useState("");
+  const [avatarSource, setAvatarSource] = useState(null);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [isFramesModalVisible, setIsFramesModalVisible] = useState(false);
+  const [tempName, setTempName] = useState("");
+  const [tempStatus, setTempStatus] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) setUser(currentUser);
-      else router.replace("/login");
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        router.replace("/login");
+      }
     });
     return unsubscribe;
   }, []);
+
+  // Синхронизируем статус из Firestore при загрузке
+  useEffect(() => {
+    if (userData?.status) {
+      setCustomStatus(userData.status);
+    }
+  }, [userData]);
 
   const handleLogout = async () => {
     try {
@@ -51,6 +70,56 @@ export const ProfileScreen = () => {
   const handleBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace("/workshop");
+  };
+
+  const handleSelectAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.2, // Сжимаем для Base64
+      });
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        setAvatarSource(uri);
+        await updateAvatar(uri);
+      }
+    } catch (error) {
+      Alert.alert("Ошибка", "Не удалось получить доступ к галерее.");
+    }
+  };
+
+  const openEditModal = () => {
+    setTempName(user?.displayName || "");
+    setTempStatus(customStatus);
+    setIsEditModalVisible(true);
+  };
+
+  const handleSaveChanges = async () => {
+    if (tempName.trim() === "") {
+      Alert.alert("Ошибка", "Имя не может быть пустым.");
+      return;
+    }
+
+    try {
+      // Обновляем имя в Firebase Auth
+      if (user) {
+        await updateProfile(user, { displayName: tempName.trim() });
+      }
+
+      // Обновляем имя и статус в Firestore
+      await updateDoc(doc(db, "users", user.uid), {
+        displayName: tempName.trim(),
+        status: tempStatus.trim(),
+      });
+
+      setCustomStatus(tempStatus.trim());
+      setIsEditModalVisible(false);
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Ошибка", "Не удалось сохранить изменения");
+    }
   };
 
   if (!user) return <View style={styles.safeArea} />;
@@ -68,12 +137,22 @@ export const ProfileScreen = () => {
         : primary
       : primary;
 
-  const initial = user.displayName
-    ? user.displayName.charAt(0).toUpperCase()
-    : "U";
+  // Достаем реальные данные пользователя
+  const displayName = user.displayName || "Пользователь";
+  const emailOrUsername = user.email ? user.email.split("@")[0] : "user";
+
+  // Форматируем реальную дату регистрации
+  const joinDate = user.metadata?.creationTime
+    ? new Date(user.metadata.creationTime).toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "Недавно";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={20} color="#FFF" />
@@ -81,7 +160,7 @@ export const ProfileScreen = () => {
         </TouchableOpacity>
         <View style={styles.orbitIndicator}>
           <MaterialCommunityIcons name="orbit" size={16} color={primary} />
-          <Text style={styles.orbitText}>ORBIT</Text>
+          <Text style={styles.orbitText}>ORDET</Text>
         </View>
       </View>
 
@@ -89,113 +168,338 @@ export const ProfileScreen = () => {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.profileHeader}>
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>{i18n.t("profile")}</Text>
+          <TouchableOpacity onPress={() => router.push("/settings")}>
+            <Feather name="more-horizontal" size={24} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Profile Info Row */}
+        <View style={styles.profileRow}>
           <TouchableOpacity
-            style={[
-              styles.avatarContainer,
-              { borderColor: frameColor, borderWidth: 4 },
-            ]}
-            onPress={() => router.push("/edit-profile")}
+            style={[styles.avatarContainer, { borderColor: frameColor }]}
+            onPress={handleSelectAvatar}
           >
-            {userData?.photoURL ? (
+            {avatarSource || userData?.photoURL || user.photoURL ? (
               <Image
-                source={{ uri: userData.photoURL }}
-                style={styles.avatar}
+                source={{
+                  uri: avatarSource || userData?.photoURL || user.photoURL,
+                }}
+                style={styles.avatarImage}
               />
             ) : (
-              <View style={[styles.avatar, { backgroundColor: primary }]}>
-                <Text style={styles.avatarText}>{initial}</Text>
+              <View style={styles.avatarPlaceholder}>
+                <MaterialCommunityIcons
+                  name="account"
+                  size={40}
+                  color={primary}
+                />
               </View>
             )}
-            <View style={styles.editAvatarBtn}>
-              <Feather name="camera" size={14} color="#FFF" />
+            <View style={styles.editBadge}>
+              <Feather name="camera" size={12} color="#FFF" />
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.name}>
-            {user.displayName || i18n.t("profile")}
-          </Text>
-          <Text style={styles.email}>{user.email}</Text>
-
-          {isPremium ? (
-            <View style={styles.premiumBanner}>
-              <FontAwesome5 name="crown" size={14} color="#FFD700" />
-              <Text style={styles.premiumBannerText}>Orbit Premium</Text>
+          <View style={styles.statusInfo}>
+            <View style={styles.statusRow}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.statusLabel}>{i18n.t("in_network")}</Text>
             </View>
-          ) : (
-            <TouchableOpacity
-              style={[styles.upgradeButton, { backgroundColor: primary }]}
-              onPress={() => router.push("/premium")}
-            >
-              <Text style={styles.upgradeButtonText}>Стать Premium</Text>
-            </TouchableOpacity>
-          )}
-
-          {isPremium && (
-            <TouchableOpacity
-              style={styles.frameButton}
-              onPress={() => router.push("/frames")}
-            >
-              <Text style={[styles.frameButtonText, { color: primary }]}>
-                Выбрать рамку
+            <View style={styles.statusRow}>
+              <Feather name="clock" size={14} color="#8E8E93" />
+              <Text style={styles.customStatusText} numberOfLines={1}>
+                {customStatus || "Статус не установлен"}
               </Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.statusBadge}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.statusText}>{i18n.t("in_network")}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>{i18n.t("information")}</Text>
-        <View style={styles.card}>
-          <View style={styles.cardRow}>
-            <Feather name="user" size={20} color="#8E8E93" />
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardLabel}>{i18n.t("name")}</Text>
-              <Text style={styles.cardValue}>{user.displayName || "—"}</Text>
-            </View>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.cardRow}>
-            <Feather name="mail" size={20} color="#8E8E93" />
-            <View style={styles.cardTextContainer}>
-              <Text style={styles.cardLabel}>{i18n.t("email")}</Text>
-              <Text style={styles.cardValue}>{user.email}</Text>
             </View>
           </View>
         </View>
 
+        {/* Name & Username */}
+        <Text style={styles.displayName}>{displayName}</Text>
+        <View style={styles.usernameRow}>
+          <Text style={styles.usernameText}>@{emailOrUsername}</Text>
+        </View>
+
+        {/* Edit Button */}
         <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => router.push("/settings")}
+          style={[styles.editButton, { backgroundColor: primary }]}
+          onPress={openEditModal}
         >
-          <Ionicons name="settings-outline" size={22} color={primary} />
-          <Text style={[styles.settingsText, { color: primary }]}>
-            {i18n.t("settings")}
-          </Text>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={primary}
-            style={{ marginLeft: "auto" }}
-          />
+          <Feather name="edit-2" size={16} color="#FFF" />
+          <Text style={styles.editButtonText}>{i18n.t("edit_profile")}</Text>
         </TouchableOpacity>
-      </ScrollView>
 
-      <View style={styles.bottomPanel}>
+        {/* Frames Button (Premium only) */}
+        {isPremium && (
+          <TouchableOpacity
+            style={styles.framesButton}
+            onPress={() => setIsFramesModalVisible(true)}
+          >
+            <Text style={[styles.framesButtonText, { color: primary }]}>
+              {i18n.t("choose_frame")}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tabToggle,
+              activeTab === "main" && styles.tabToggleActive,
+            ]}
+            onPress={() => setActiveTab("main")}
+          >
+            <Text
+              style={
+                activeTab === "main" ? styles.tabTextActive : styles.tabText
+              }
+            >
+              Главное
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tabToggle,
+              activeTab === "wishlist" && styles.tabToggleActive,
+            ]}
+            onPress={() => setActiveTab("wishlist")}
+          >
+            <Text
+              style={
+                activeTab === "wishlist" ? styles.tabTextActive : styles.tabText
+              }
+            >
+              Вишлист
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Main Tab Content */}
+        {activeTab === "main" && (
+          <>
+            {/* Balance (Убрали фейковый 800) */}
+            <View style={styles.balanceCard}>
+              <View style={styles.balanceLeft}>
+                <FontAwesome5 name="gem" size={20} color="#8A56FF" />
+                <Text style={styles.balanceLabel}>Баланс Orbit</Text>
+              </View>
+              <View style={styles.balanceRight}>
+                <Text style={styles.balanceValue}>0</Text>
+                <Text style={styles.balanceCurrency}>ORB</Text>
+              </View>
+            </View>
+
+            {/* Date */}
+            <Text style={styles.metaLabel}>В числе участников с</Text>
+            <View style={styles.metaRow}>
+              <Feather name="calendar" size={16} color="#8E8E93" />
+              <Text style={styles.metaText}>{joinDate}</Text>
+            </View>
+
+            {/* Friends & Note */}
+            <View style={styles.listContainer}>
+              <TouchableOpacity style={styles.listItem}>
+                <Feather name="users" size={20} color="#FFF" />
+                <Text style={styles.listText}>Друзья</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color="#8E8E93"
+                  style={{ marginLeft: "auto" }}
+                />
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.listItem}>
+                <Feather name="file-text" size={20} color="#FFF" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.listText}>Заметка</Text>
+                  <Text style={styles.listSub}>Видна только вам</Text>
+                </View>
+                <Feather name="plus" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {/* Wishlist Tab Content */}
+        {activeTab === "wishlist" && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>Вишлист пуст</Text>
+          </View>
+        )}
+
+        {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#FF453A" />
           <Text style={styles.logoutText}>{i18n.t("logout")}</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={isEditModalVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>Редактировать профиль</Text>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>ИМЯ</Text>
+            <TextInput
+              style={styles.textInput}
+              value={tempName}
+              onChangeText={setTempName}
+              placeholder="Введите имя"
+              placeholderTextColor="#656469"
+            />
+          </View>
+          <View style={styles.inputBlock}>
+            <Text style={styles.inputLabel}>СТАТУС</Text>
+            <TextInput
+              style={styles.textInput}
+              value={tempStatus}
+              onChangeText={setTempStatus}
+              placeholder="Введите статус"
+              placeholderTextColor="#656469"
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.saveBtn, { backgroundColor: primary }]}
+            onPress={handleSaveChanges}
+          >
+            <Text style={styles.saveBtnText}>Сохранить</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => setIsEditModalVisible(false)}
+          >
+            <Text style={styles.closeBtnText}>Отмена</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Frames Modal */}
+      <Modal
+        visible={isFramesModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsFramesModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsFramesModalVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.bottomSheetContainer}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.dragHandle} />
+            <Text style={styles.bottomSheetTitle}>Выберите рамку</Text>
+
+            <View style={styles.framesGrid}>
+              {["default", "gold", "purple", "green", "fire"].map((frame) => {
+                const isSelected =
+                  userData?.frame === frame ||
+                  (!userData?.frame && frame === "default");
+
+                const frameBorderColor =
+                  frame === "default"
+                    ? primary
+                    : frame === "gold"
+                    ? "#FFD700"
+                    : frame === "purple"
+                    ? "#9D4EDD"
+                    : frame === "green"
+                    ? "#4ADE80"
+                    : "#FF4500";
+
+                const frameTitle =
+                  frame === "default"
+                    ? "Стандарт"
+                    : frame === "gold"
+                    ? "Золото"
+                    : frame === "purple"
+                    ? "Фиолет"
+                    : frame === "green"
+                    ? "Зеленый"
+                    : "Огонь";
+
+                return (
+                  <TouchableOpacity
+                    key={frame}
+                    style={styles.frameWrapper}
+                    onPress={() => {
+                      if (setUserFrame) setUserFrame(frame);
+                      setIsFramesModalVisible(false);
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.framePreview,
+                        { borderColor: frameBorderColor },
+                        isSelected && {
+                          backgroundColor: "rgba(255,255,255,0.06)",
+                        },
+                      ]}
+                    >
+                      {avatarSource || userData?.photoURL || user.photoURL ? (
+                        <Image
+                          source={{
+                            uri:
+                              avatarSource ||
+                              userData?.photoURL ||
+                              user.photoURL,
+                          }}
+                          style={styles.framePreviewImage}
+                        />
+                      ) : (
+                        <MaterialCommunityIcons
+                          name="account"
+                          size={32}
+                          color="#8E8E93"
+                        />
+                      )}
+
+                      {isSelected && (
+                        <View
+                          style={[
+                            styles.selectedBadge,
+                            { backgroundColor: frameBorderColor },
+                          ]}
+                        >
+                          <Ionicons name="checkmark" size={12} color="#FFF" />
+                        </View>
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.frameLabel,
+                        isSelected && {
+                          color: frameBorderColor,
+                          fontWeight: "600",
+                        },
+                      ]}
+                    >
+                      {frameTitle}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#1A1A1E" },
+  safeArea: { flex: 1, backgroundColor: "#0F0E13" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -213,127 +517,146 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 1,
   },
-  scrollContainer: { paddingHorizontal: 24, paddingBottom: 20 },
-  profileHeader: { alignItems: "center", marginVertical: 24 },
+  scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  pageTitle: { fontSize: 28, fontWeight: "400", color: "#FFF" },
+
+  profileRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 2,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginRight: 16,
+  },
+  avatarImage: { width: 68, height: 68, borderRadius: 18 },
+  avatarPlaceholder: {
+    width: 68,
+    height: 68,
+    borderRadius: 18,
+    backgroundColor: "#2C2C2E",
+    justifyContent: "center",
+    alignItems: "center",
     position: "relative",
   },
-  avatar: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: { color: "#FFF", fontSize: 36, fontWeight: "bold" },
-  editAvatarBtn: {
+  editBadge: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: -4,
+    right: -4,
     backgroundColor: "#2C2C2E",
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#1A1A1E",
-    zIndex: 20,
+    borderColor: "#0F0E13",
   },
-  name: { color: "#FFF", fontSize: 24, fontWeight: "600", marginBottom: 4 },
-  email: { color: "#8E8E93", fontSize: 14, marginBottom: 12 },
-  premiumBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 215, 0, 0.15)",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#FFD700",
-    marginTop: 10,
-    marginBottom: 10,
-    gap: 8,
-  },
-  premiumBannerText: {
-    color: "#FFD700",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  upgradeButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  upgradeButtonText: { color: "#FFF", fontSize: 14, fontWeight: "600" },
-  frameButton: {
-    marginTop: 10,
-    backgroundColor: "#2C2C2E",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  frameButtonText: { fontSize: 14, fontWeight: "600" },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#2C2C2E",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
+  statusInfo: { gap: 8, flex: 1 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   onlineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: "#4ADE80",
-    marginRight: 6,
   },
-  statusText: { color: "#4ADE80", fontSize: 12, fontWeight: "500" },
-  sectionTitle: {
-    fontSize: 12,
-    color: "#666",
-    letterSpacing: 1,
-    marginBottom: 12,
-    fontWeight: "600",
+  statusLabel: { color: "#4ADE80", fontSize: 12, fontWeight: "500" },
+  customStatusText: { color: "#8E8E93", fontSize: 12, flex: 1 },
+
+  displayName: {
+    color: "#FFF",
+    fontSize: 26,
+    fontWeight: "bold",
+    marginBottom: 4,
   },
-  card: {
-    backgroundColor: "#2C2C2E",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  cardRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
-  cardTextContainer: { marginLeft: 16 },
-  cardLabel: { fontSize: 12, color: "#8E8E93", marginBottom: 2 },
-  cardValue: { fontSize: 16, color: "#FFF" },
-  divider: { height: 1, backgroundColor: "#3A3A3C", marginVertical: 8 },
-  settingsButton: {
+  usernameRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  usernameText: { color: "#8E8E93", fontSize: 14 },
+
+  editButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    height: 48,
+    borderRadius: 12,
+    marginBottom: 24,
+    gap: 8,
+  },
+  editButtonText: { color: "#FFF", fontSize: 15, fontWeight: "600" },
+
+  framesButton: {
     backgroundColor: "#2C2C2E",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  framesButtonText: { fontSize: 14, fontWeight: "600" },
+
+  tabsContainer: {
+    flexDirection: "row",
+    borderBottomWidth: 2,
+    borderBottomColor: "#2C2C2E",
+    marginBottom: 24,
+  },
+  tabToggle: {
+    flex: 1,
+    alignItems: "center",
+    paddingBottom: 12,
+    marginBottom: -2,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabToggleActive: { borderBottomColor: "#7C6AFA" },
+  tabText: { color: "#8E8E93", fontSize: 14, fontWeight: "500" },
+  tabTextActive: { color: "#FFF", fontSize: 14, fontWeight: "600" },
+
+  balanceCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#1C1B22",
     padding: 16,
     borderRadius: 16,
-    marginBottom: 16,
+    marginBottom: 24,
   },
-  settingsText: { fontSize: 16, fontWeight: "500", marginLeft: 12 },
-  bottomPanel: {
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: "#2C2C2E",
-    backgroundColor: "#1A1A1E",
+  balanceLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  balanceLabel: { color: "#FFF", fontSize: 15, fontWeight: "500" },
+  balanceRight: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  balanceValue: { color: "#FFF", fontSize: 22, fontWeight: "bold" },
+  balanceCurrency: { color: "#8E8E93", fontSize: 12, fontWeight: "600" },
+
+  metaLabel: { color: "#656469", fontSize: 12, marginBottom: 8 },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 24,
   },
+  metaText: { color: "#FFF", fontSize: 14 },
+
+  listContainer: {
+    backgroundColor: "#1C1B22",
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 32,
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 12,
+  },
+  listText: { color: "#FFF", fontSize: 15, fontWeight: "500" },
+  listSub: { color: "#8E8E93", fontSize: 12, marginTop: 2 },
+  divider: { height: 1, backgroundColor: "#2C2C2E", marginLeft: 44 },
+
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -344,8 +667,124 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     color: "#FF453A",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
     marginLeft: 8,
+  },
+
+  emptyState: { alignItems: "center", padding: 40 },
+  emptyStateText: { color: "#656469", fontSize: 14 },
+
+  // ---------- Edit Modal ----------
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#0F0E13",
+    padding: 20,
+    justifyContent: "center",
+  },
+  modalTitle: {
+    color: "#FFF",
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  inputBlock: { marginBottom: 20 },
+  inputLabel: {
+    color: "#656469",
+    fontSize: 12,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: "#1C1B22",
+    color: "#FFF",
+    padding: 16,
+    borderRadius: 12,
+    fontSize: 16,
+  },
+  saveBtn: {
+    height: 50,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  saveBtnText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  closeBtn: { padding: 14, alignItems: "center" },
+  closeBtnText: { color: "#656469", fontSize: 15 },
+
+  // ---------- Frames Bottom Sheet ----------
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    justifyContent: "flex-end",
+  },
+  bottomSheetContainer: {
+    backgroundColor: "#1C1B22",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 36,
+    minHeight: 320,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#3A3A3C",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  bottomSheetTitle: {
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  framesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+  },
+  frameWrapper: {
+    width: "20%",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  framePreview: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    position: "relative",
+    backgroundColor: "#0F0E13",
+  },
+  framePreviewImage: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+  },
+  selectedBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#1C1B22",
+  },
+  frameLabel: {
+    color: "#8E8E93",
+    fontSize: 11,
+    textAlign: "center",
   },
 });

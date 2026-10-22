@@ -1,27 +1,21 @@
-import React, {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  useMemo,
-} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { updateProfile } from "firebase/auth";
 import {
-  collection,
   addDoc,
-  getDocs,
-  query,
-  where,
+  arrayUnion,
+  collection,
   deleteDoc,
   doc,
-  updateDoc,
+  getDocs,
   onSnapshot,
+  query,
   setDoc,
-  arrayUnion, // <-- ДОБАВЛЕНО
+  updateDoc,
+  where,
 } from "firebase/firestore";
-import { updateProfile } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Updates from "expo-updates";
-import { db, auth } from "../firebase/config";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { Platform } from "react-native";
+import { auth, db } from "../firebase/config";
 import i18n from "../i18n";
 
 const AppContext = createContext();
@@ -41,28 +35,23 @@ export const AppProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [activeTheme, setActiveTheme] = useState("purple");
 
-  // Загрузка сохраненного языка И ТЕМЫ
   useEffect(() => {
     const loadSavedData = async () => {
       try {
         const savedLang = await AsyncStorage.getItem("appLanguage");
         const savedTheme = await AsyncStorage.getItem("appTheme");
-
         if (savedLang) {
           setLanguage(savedLang);
           i18n.locale = savedLang;
         }
-        if (savedTheme && THEMES[savedTheme]) {
-          setActiveTheme(savedTheme);
-        }
+        if (savedTheme && THEMES[savedTheme]) setActiveTheme(savedTheme);
       } catch (error) {
-        console.log("Ошибка загрузки настроек:", error);
+        console.log(error);
       }
     };
     loadSavedData();
   }, []);
 
-  // Загрузка данных пользователя
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (!user) {
@@ -70,7 +59,6 @@ export const AppProvider = ({ children }) => {
         setIsPremium(false);
         return;
       }
-
       const unsubDoc = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -89,14 +77,11 @@ export const AppProvider = ({ children }) => {
           );
         }
       });
-
       return () => unsubDoc();
     });
-
     return unsubscribe;
   }, []);
 
-  // Загрузка серверов
   useEffect(() => {
     const loadServers = async () => {
       const user = auth.currentUser;
@@ -117,7 +102,7 @@ export const AppProvider = ({ children }) => {
         setServers(loadedServers);
         if (loadedServers.length > 0) setActiveServerId(loadedServers[0].id);
       } catch (error) {
-        console.log("Ошибка загрузки:", error);
+        console.log(error);
       } finally {
         setLoading(false);
       }
@@ -132,89 +117,105 @@ export const AppProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  // Смена языка
   const changeLanguage = async (lang) => {
     try {
       await AsyncStorage.setItem("appLanguage", lang);
       i18n.locale = lang;
       setLanguage(lang);
-      await Updates.reloadAsync();
-    } catch (error) {
-      console.log("Ошибка смены языка:", error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
-  // СМЕНА ТЕМЫ С ПОЛНОЙ ПЕРЕЗАГРУЗКОЙ
   const changeTheme = async (themeId) => {
     if (!THEMES[themeId]) return;
     try {
       await AsyncStorage.setItem("appTheme", themeId);
       setActiveTheme(themeId);
-
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      } else {
-        await Updates.reloadAsync();
-      }
-    } catch (error) {
-      console.log("Ошибка смены темы:", error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
   const themeColors = THEMES[activeTheme] || THEMES.purple;
 
-  // Обновление профиля
-  const updateUserProfile = async (name, photoUri) => {
+  const updateUserProfile = async (name, status) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      await updateProfile(user, { displayName: name });
+      await updateDoc(doc(db, "users", user.uid), {
+        displayName: name,
+        status: status || "",
+      });
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  };
+
+  // ИСПРАВЛЕНО: Картинка сохраняется только в Firestore, в Auth пишем заглушку
+  const updateAvatar = async (photoUri) => {
     const user = auth.currentUser;
     if (!user) return;
 
     try {
-      await updateProfile(user, { displayName: name, photoURL: photoUri });
-      await updateDoc(doc(db, "users", user.uid), {
-        displayName: name,
-        photoURL: photoUri,
-      });
+      let base64Image = "";
+
+      if (Platform.OS === "web") {
+        const response = await fetch(photoUri);
+        const blob = await response.blob();
+        base64Image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        const FileSystem = require("expo-file-system/legacy");
+        const base64 = await FileSystem.readAsStringAsync(photoUri, {
+          encoding: "base64",
+        });
+        base64Image = `data:image/jpeg;base64,${base64}`;
+      }
+
+      // В Auth сохраняем короткую строку-заглушку, чтобы избежать ошибки "URL too long"
+      await updateProfile(user, { photoURL: "updated" });
+
+      // В Firestore сохраняем саму Base64-картинку
+      await updateDoc(doc(db, "users", user.uid), { photoURL: base64Image });
+      setUserData((prev) => ({ ...prev, photoURL: base64Image }));
     } catch (error) {
-      console.log("Ошибка обновления профиля:", error);
-      alert("Не удалось обновить профиль");
+      console.log("Ошибка аватарки:", error);
+      alert("Не удалось сохранить аватарку: " + error.message);
     }
   };
 
-  // Выбор рамки
   const setUserFrame = async (frameId) => {
     const user = auth.currentUser;
     if (!user) return;
     try {
       await updateDoc(doc(db, "users", user.uid), { frame: frameId });
-    } catch (error) {
-      console.log("Ошибка смены рамки:", error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
-  // Активация Premium
   const activatePremium = async (plan) => {
     const user = auth.currentUser;
     if (!user) return;
     try {
       await setDoc(
         doc(db, "users", user.uid),
-        {
-          isPremium: true,
-          premiumPlan: plan,
-          premiumSince: new Date(),
-        },
+        { isPremium: true, premiumPlan: plan, premiumSince: new Date() },
         { merge: true }
       );
       setIsPremium(true);
-    } catch (error) {
-      console.log("Ошибка активации Premium:", error);
-      alert(
-        "Не удалось активировать Premium. Проверьте права доступа в Firestore."
-      );
+    } catch (e) {
+      console.log(e);
     }
   };
 
-  // Создание сервера
   const addServer = async (serverData) => {
     const user = auth.currentUser;
     if (!user) return null;
@@ -235,12 +236,11 @@ export const AppProvider = ({ children }) => {
       setServers((prev) => [...prev, newServer]);
       setActiveServerId(newServer.id);
       return newServer;
-    } catch (error) {
-      console.log("Ошибка создания:", error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
-  // Удаление сервера
   const deleteServer = async (serverId) => {
     try {
       await deleteDoc(doc(db, "servers", serverId));
@@ -249,39 +249,33 @@ export const AppProvider = ({ children }) => {
         const remaining = servers.filter((s) => s.id !== serverId);
         setActiveServerId(remaining.length > 0 ? remaining[0].id : null);
       }
-    } catch (error) {
-      console.log("Ошибка удаления:", error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
-  // Переименование сервера
   const renameServer = async (serverId, newName) => {
     try {
-      const serverRef = doc(db, "servers", serverId);
-      await updateDoc(serverRef, { name: newName });
+      await updateDoc(doc(db, "servers", serverId), { name: newName });
       setServers((prev) =>
         prev.map((s) => (s.id === serverId ? { ...s, name: newName } : s))
       );
-    } catch (error) {
-      console.log("Ошибка переименования:", error);
+    } catch (e) {
+      console.log(e);
     }
   };
 
-  // СОЗДАНИЕ КАНАЛА
   const createChannel = async (serverId, channelData) => {
     if (!serverId) return null;
     try {
-      const serverRef = doc(db, "servers", serverId);
       const newChannel = {
         id: Date.now().toString(),
         name: channelData.name,
         type: channelData.type,
       };
-
-      await updateDoc(serverRef, {
+      await updateDoc(doc(db, "servers", serverId), {
         channels: arrayUnion(newChannel),
       });
-
       setServers((prev) =>
         prev.map((s) =>
           s.id === serverId
@@ -290,9 +284,8 @@ export const AppProvider = ({ children }) => {
         )
       );
       return newChannel;
-    } catch (error) {
-      console.log("Ошибка создания канала:", error);
-      alert("Не удалось создать канал");
+    } catch (e) {
+      console.log(e);
       return null;
     }
   };
@@ -308,7 +301,7 @@ export const AppProvider = ({ children }) => {
       addServer,
       deleteServer,
       renameServer,
-      createChannel, // <-- ДОБАВЛЕНО
+      createChannel,
       setActiveServerId,
       loading,
       language,
@@ -317,6 +310,7 @@ export const AppProvider = ({ children }) => {
       userData,
       activatePremium,
       updateUserProfile,
+      updateAvatar,
       setUserFrame,
       activeTheme,
       changeTheme,

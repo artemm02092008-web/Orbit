@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { AppProvider } from "../context/AppContext";
 
 export default function RootLayout() {
@@ -25,7 +25,12 @@ export default function RootLayout() {
             <Stack.Screen name="appearance" />
             <Stack.Screen name="frames" />
             <Stack.Screen name="notifications" />
-        <Stack.Screen name="chats" />
+            <Stack.Screen name="chats" />
+
+            {/* Экраны, которые мы добавили для участников и звонков */}
+            <Stack.Screen name="members" />
+            <Stack.Screen name="chat/[id]" />
+            <Stack.Screen name="call/[id]" />
           </Stack>
         </View>
       </View>
