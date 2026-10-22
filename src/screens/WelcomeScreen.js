@@ -8,10 +8,11 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { COLORS } from "../theme/colors";
 import { CustomButton } from "../components/CustomButton";
+import { AnimatedLogo } from "../components/AnimatedLogo";
 
 export const WelcomeScreen = () => {
   const router = useRouter();
@@ -37,10 +38,8 @@ export const WelcomeScreen = () => {
             {/* Content */}
             <View style={styles.content}>
               <View style={styles.logoContainer}>
-                <View style={styles.logoBackground}>
-                  <MaterialCommunityIcons name="orbit" size={50} color={COLORS.primary} />
-                  <View style={styles.logoDot} />
-                </View>
+                {/* Убрали квадрат logoBackground, логотип теперь просто висит по центру */}
+                <AnimatedLogo size={140} />
               </View>
               <Text style={styles.title}>Добро пожаловать{"\n"}в Orbit</Text>
               <Text style={styles.subtitle}>
@@ -87,9 +86,14 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary, marginRight: 6 },
   orbitText: { color: COLORS.primary, fontSize: 14, fontWeight: "500" },
   content: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 40 },
-  logoContainer: { marginBottom: 40, shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
-  logoBackground: { width: 100, height: 100, backgroundColor: COLORS.logoBackground, borderRadius: 28, justifyContent: "center", alignItems: "center", position: "relative" },
-  logoDot: { position: "absolute", top: 20, right: 20, width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary },
+  
+  // Обновили контейнер для логотипа (убрали тени, так как квадрата больше нет)
+  logoContainer: { 
+    marginBottom: 40, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  
   title: { fontSize: 32, fontWeight: "400", color: COLORS.textPrimary, textAlign: "center", marginBottom: 16, lineHeight: 40 },
   subtitle: { fontSize: 14, color: COLORS.textSecondary, textAlign: "center", lineHeight: 20 },
   footer: { paddingBottom: Platform.OS === "ios" ? 10 : 20 },

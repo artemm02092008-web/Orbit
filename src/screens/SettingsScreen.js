@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { useApp } from "../context/AppContext";
-import i18n from "../i18n";
+import { useTranslation } from "../hooks/useTranslation"; // <-- ХУК ПЕРЕВОДА
 
 const COLORS = {
   bg: "#0F0E13",
@@ -22,13 +22,22 @@ const COLORS = {
 
 export const SettingsScreen = () => {
   const router = useRouter();
-  // Берем язык и ЦВЕТА ТЕМЫ из контекста
+  const { t } = useTranslation(); // <-- ИНИЦИАЛИЗАЦИЯ
   const { language, themeColors } = useApp() || {};
   const primary = themeColors?.primary || "#8A56FF";
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace("/workshop");
+  };
+
+  const getCurrentLanguageName = () => {
+    if (language === "ru") return "Русский";
+    if (language === "en") return "English";
+    if (language === "es") return "Español";
+    if (language === "fr") return "Français";
+    if (language === "de") return "Deutsch";
+    return "Русский";
   };
 
   return (
@@ -45,7 +54,9 @@ export const SettingsScreen = () => {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.backText}>Назад</Text>
+          <Text style={styles.backText}>
+            {t({ ru: "Назад", en: "Back", es: "Atrás", fr: "Retour", de: "Zurück" })}
+          </Text>
         </TouchableOpacity>
         <View style={styles.orbitIndicator}>
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -60,7 +71,9 @@ export const SettingsScreen = () => {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageTitle}>Настройки</Text>
+        <Text style={styles.pageTitle}>
+          {t({ ru: "Настройки", en: "Settings", es: "Ajustes", fr: "Paramètres", de: "Einstellungen" })}
+        </Text>
 
         {/* Premium Card */}
         <TouchableOpacity
@@ -81,9 +94,17 @@ export const SettingsScreen = () => {
             </Svg>
           </View>
           <View style={styles.premiumTextContainer}>
-            <Text style={styles.premiumTitle}>Orbit Premium</Text>
+            <Text style={styles.premiumTitle}>
+              {t({ ru: "Orbit Premium", en: "Orbit Premium", es: "Orbit Premium", fr: "Orbit Premium", de: "Orbit Premium" })}
+            </Text>
             <Text style={styles.premiumSubtitle}>
-              Больше пространства для общения
+              {t({
+                ru: "Больше пространства для общения",
+                en: "More space for communication",
+                es: "Más espacio para comunicarse",
+                fr: "Plus d'espace pour communiquer",
+                de: "Mehr Platz für Kommunikation"
+              })}
             </Text>
           </View>
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -101,52 +122,54 @@ export const SettingsScreen = () => {
         <View style={styles.sectionCard}>
           <MenuItem
             icon={<AccountIcon />}
-            title="Учётная запись"
+            title={t({ ru: "Учётная запись", en: "Account", es: "Cuenta", fr: "Compte", de: "Konto" })}
             onPress={() => router.push("/profile")}
           />
           <MenuItem
             icon={<BellIcon />}
-            title="Уведомления"
+            title={t({ ru: "Уведомления", en: "Notifications", es: "Notificaciones", fr: "Notifications", de: "Benachrichtigungen" })}
             onPress={() => {}}
           />
           <MenuItem
             icon={<PaletteIcon />}
-            title="Внешний вид"
+            title={t({ ru: "Внешний вид", en: "Appearance", es: "Apariencia", fr: "Apparence", de: "Erscheinungsbild" })}
             onPress={() => router.push("/appearance")}
           />
           <MenuItem
             icon={<LanguageIcon />}
-            title="Язык"
-            value={
-              language === "ru"
-                ? "Русский"
-                : language === "en"
-                ? "English"
-                : "Español"
-            }
+            title={t({ ru: "Язык", en: "Language", es: "Idioma", fr: "Langue", de: "Sprache" })}
+            value={getCurrentLanguageName()}
             onPress={() => router.push("/language")}
             isLast
           />
         </View>
 
         {/* Support Section */}
-        <Text style={styles.sectionLabel}>Поддержка</Text>
+        <Text style={styles.sectionLabel}>
+          {t({ ru: "Поддержка", en: "Support", es: "Soporte", fr: "Support", de: "Support" })}
+        </Text>
         <View style={styles.sectionCard}>
-          <MenuItem icon={<HelpIcon />} title="Поддержка" onPress={() => {}} />
+          <MenuItem 
+            icon={<HelpIcon />} 
+            title={t({ ru: "Поддержка", en: "Support", es: "Soporte", fr: "Support", de: "Support" })} 
+            onPress={() => {}} 
+          />
           <MenuItem
             icon={<LogIcon />}
-            title="Отправить логи"
+            title={t({ ru: "Отправить логи", en: "Send logs", es: "Enviar registros", fr: "Envoyer les logs", de: "Protokolle senden" })}
             onPress={() => {}}
             isLast
           />
         </View>
 
         {/* Updates Section */}
-        <Text style={styles.sectionLabel}>Что нового</Text>
+        <Text style={styles.sectionLabel}>
+          {t({ ru: "Что нового", en: "What's new", es: "Novedades", fr: "Nouveautés", de: "Was ist neu" })}
+        </Text>
         <View style={styles.sectionCard}>
           <MenuItem
             icon={<SparklesIcon color={primary} />}
-            title="Обновления Orbit"
+            title={t({ ru: "Обновления Orbit", en: "Orbit updates", es: "Actualizaciones de Orbit", fr: "Mises à jour Orbit", de: "Orbit-Updates" })}
             value="2.8"
             onPress={() => {}}
             isLast
@@ -167,16 +190,20 @@ export const SettingsScreen = () => {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.logoutText}>Выйти</Text>
+          <Text style={styles.logoutText}>
+            {t({ ru: "Выйти", en: "Log out", es: "Cerrar sesión", fr: "Déconnexion", de: "Abmelden" })}
+          </Text>
         </TouchableOpacity>
 
-        <Text style={styles.footerText}>Orbit для вас · версия 2.8.0</Text>
+        <Text style={styles.footerText}>
+          Orbit · {t({ ru: "версия", en: "version", es: "versión", fr: "version", de: "Version" })} 2.8.0
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-// Компонент строки меню
+// --- Компонент строки меню ---
 const MenuItem = ({ icon, title, value, onPress, isLast }) => (
   <TouchableOpacity
     style={[styles.menuItem, !isLast && styles.menuItemBorder]}
@@ -197,7 +224,7 @@ const MenuItem = ({ icon, title, value, onPress, isLast }) => (
   </TouchableOpacity>
 );
 
-// Иконки
+// --- ИКОНКИ (полностью прописаны, чтобы не было ошибок) ---
 const AccountIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -209,6 +236,7 @@ const AccountIcon = () => (
     />
   </Svg>
 );
+
 const BellIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -220,6 +248,7 @@ const BellIcon = () => (
     />
   </Svg>
 );
+
 const PaletteIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -234,6 +263,7 @@ const PaletteIcon = () => (
     <Circle cx={16.5} cy={10.5} r={1.5} fill="#FFF" />
   </Svg>
 );
+
 const LanguageIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -245,6 +275,7 @@ const LanguageIcon = () => (
     />
   </Svg>
 );
+
 const HelpIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Circle cx={12} cy={12} r={10} stroke="#FFF" strokeWidth={2} />
@@ -257,6 +288,7 @@ const HelpIcon = () => (
     />
   </Svg>
 );
+
 const LogIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -275,7 +307,7 @@ const LogIcon = () => (
     />
   </Svg>
 );
-// Иконка "Обновления" теперь принимает цвет темы
+
 const SparklesIcon = ({ color }) => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -308,19 +340,9 @@ const styles = StyleSheet.create({
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#A3A2A8", fontSize: 16, marginLeft: 4 },
   orbitIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
-  orbitText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
+  orbitText: { color: "#FFF", fontSize: 14, fontWeight: "600", letterSpacing: 1 },
   scrollContainer: { paddingHorizontal: 16, paddingBottom: 40 },
-  pageTitle: {
-    fontSize: 32,
-    fontWeight: "400",
-    color: "#FFF",
-    marginBottom: 20,
-  },
+  pageTitle: { fontSize: 32, fontWeight: "400", color: "#FFF", marginBottom: 20 },
   premiumCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -341,25 +363,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   premiumTextContainer: { flex: 1 },
-  premiumTitle: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
+  premiumTitle: { color: "#FFF", fontSize: 16, fontWeight: "600", marginBottom: 2 },
   premiumSubtitle: { color: "#A09AB5", fontSize: 12 },
-  sectionLabel: {
-    fontSize: 14,
-    color: "#656469",
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  sectionCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
+  sectionLabel: { fontSize: 14, color: "#656469", marginBottom: 12, marginTop: 8 },
+  sectionCard: { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, marginBottom: 24 },
   menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: 16 },
   menuItemBorder: { borderBottomWidth: 1, borderBottomColor: "#232229" },
   menuIconContainer: { width: 28, marginRight: 12, alignItems: "center" },
@@ -374,11 +381,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 24,
   },
-  logoutText: {
-    color: "#FF453A",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
-  },
+  logoutText: { color: "#FF453A", fontSize: 16, fontWeight: "600", marginLeft: 8 },
   footerText: { color: "#656469", fontSize: 12, textAlign: "center" },
 });

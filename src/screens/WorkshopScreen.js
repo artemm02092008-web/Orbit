@@ -1,6 +1,6 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react"; // <-- ДОБАВИЛИ useEffect
 import {
   Alert,
   Image,
@@ -14,9 +14,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AnimatedLogo } from "../components/AnimatedLogo"; // <-- ДОБАВЛЕН ИМПОРТ ЛОГОТИПА
+import { AnimatedLogo } from "../components/AnimatedLogo";
 import { useApp } from "../context/AppContext";
 import i18n from "../i18n";
+import { doc, onSnapshot } from "firebase/firestore"; // <-- ДОБАВИЛИ ИМПОРТ
+import { db } from "../firebase/config"; // <-- ДОБАВИЛИ ИМПОРТ
 
 export const WorkshopScreen = () => {
   const router = useRouter();
@@ -38,10 +40,31 @@ export const WorkshopScreen = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [channelType, setChannelType] = useState("general");
+  
+  // НОВОЕ: Стейт для реального количества участников
+  const [memberCount, setMemberCount] = useState(0); 
 
   const primaryColor = themeColors?.primary || "#8A56FF";
 
-  // --- ЛОГИКА СВАЙПА ВЛЕВО ---
+  // НОВОЕ: Слушаем изменения в базе, чтобы обновлять счетчик
+  useEffect(() => {
+    if (!activeServer?.id) {
+      setMemberCount(0);
+      return;
+    }
+
+    const unsub = onSnapshot(doc(db, "servers", activeServer.id), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const members = data.members || [];
+        // Считаем количество участников + 1 (владелец)
+        setMemberCount(members.length + 1); 
+      }
+    });
+
+    return () => unsub();
+  }, [activeServer?.id]);
+
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
@@ -109,7 +132,6 @@ export const WorkshopScreen = () => {
             <Text style={styles.backText}>{i18n.t("back")}</Text>
           </TouchableOpacity>
 
-          {/* ЗАМЕНА СТАРОЙ ИКОНКИ НА АНИМИРОВАННЫЙ ЛОГОТИП */}
           <View style={styles.orbitIndicator}>
             <AnimatedLogo size={20} />
             <Text style={styles.orbitText}>ORBIT</Text>
@@ -177,15 +199,23 @@ export const WorkshopScreen = () => {
                 </Text>
                 <View style={styles.serverStatus}>
                   <View style={styles.onlineDot} />
+                  {/* ЗАМЕНИЛИ СТАТИЧНЫЙ ТЕКСТ НА РЕАЛЬНОЕ ЧИСЛО */}
                   <Text style={styles.serverStatusText}>
-                    0 {i18n.t("in_network")} · 1
+                    {memberCount} {i18n.t("in_network")} · {memberCount}
                   </Text>
                 </View>
               </View>
               <Ionicons name="chevron-down" size={20} color="#FFF" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.inviteButton}>
+            {/* Кнопка приглашения */}
+            <TouchableOpacity 
+              style={styles.inviteButton}
+              onPress={() => router.push({
+                pathname: "/invite",
+                params: { serverId: activeServer?.id || "masters", serverName: activeServer?.name || "Мастерская" }
+              })}
+            >
               <Feather name="user-plus" size={16} color={primaryColor} />
               <Text style={[styles.inviteText, { color: primaryColor }]}>
                 {i18n.t("invite")}
@@ -204,21 +234,14 @@ export const WorkshopScreen = () => {
                 </View>
               ) : (
                 <>
+                  {/* ... секция info ... */}
                   <View style={styles.sectionHeader}>
                     <TouchableOpacity
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        flex: 1,
-                      }}
+                      style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
                       onPress={() => toggleSection("info")}
                     >
                       <Ionicons
-                        name={
-                          expandedSections.info
-                            ? "chevron-down"
-                            : "chevron-forward"
-                        }
+                        name={expandedSections.info ? "chevron-down" : "chevron-forward"}
                         size={16}
                         color="#8E8E93"
                       />
@@ -253,21 +276,14 @@ export const WorkshopScreen = () => {
                     </View>
                   )}
 
+                  {/* ... секция general ... */}
                   <View style={styles.sectionHeader}>
                     <TouchableOpacity
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        flex: 1,
-                      }}
+                      style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
                       onPress={() => toggleSection("general")}
                     >
                       <Ionicons
-                        name={
-                          expandedSections.general
-                            ? "chevron-down"
-                            : "chevron-forward"
-                        }
+                        name={expandedSections.general ? "chevron-down" : "chevron-forward"}
                         size={16}
                         color="#8E8E93"
                       />
@@ -302,21 +318,14 @@ export const WorkshopScreen = () => {
                     </View>
                   )}
 
+                  {/* ... секция voice ... */}
                   <View style={styles.sectionHeader}>
                     <TouchableOpacity
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        flex: 1,
-                      }}
+                      style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
                       onPress={() => toggleSection("voice")}
                     >
                       <Ionicons
-                        name={
-                          expandedSections.voice
-                            ? "chevron-down"
-                            : "chevron-forward"
-                        }
+                        name={expandedSections.voice ? "chevron-down" : "chevron-forward"}
                         size={16}
                         color="#8E8E93"
                       />
@@ -431,10 +440,7 @@ export const WorkshopScreen = () => {
                   <Text style={styles.modalBtnCancelText}>Отмена</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.modalBtnSave,
-                    { backgroundColor: primaryColor },
-                  ]}
+                  style={[styles.modalBtnSave, { backgroundColor: primaryColor }]}
                   onPress={handleCreateChannel}
                 >
                   <Text style={styles.modalBtnSaveText}>Создать</Text>
@@ -449,6 +455,7 @@ export const WorkshopScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  // ... ваши стили ...
   safeArea: { flex: 1, backgroundColor: "#1A1A1E" },
   header: {
     flexDirection: "row",
@@ -461,12 +468,7 @@ const styles = StyleSheet.create({
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#FFF", fontSize: 14, marginLeft: 4 },
   orbitIndicator: { flexDirection: "row", alignItems: "center", gap: 4 },
-  orbitText: {
-    color: "#FFF",
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
+  orbitText: { color: "#FFF", fontSize: 12, fontWeight: "600", letterSpacing: 1 },
   mainContainer: { flex: 1, flexDirection: "row" },
   sidebar: {
     width: 64,
@@ -505,12 +507,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#2C2C2E",
   },
-  serverTitle: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
+  serverTitle: { color: "#FFF", fontSize: 18, fontWeight: "600", marginBottom: 4 },
   serverStatus: { flexDirection: "row", alignItems: "center" },
   onlineDot: {
     width: 8,
@@ -533,98 +530,28 @@ const styles = StyleSheet.create({
   },
   inviteText: { fontSize: 14, fontWeight: "500" },
   scrollContent: { paddingHorizontal: 12, paddingBottom: 20 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  sectionTitle: {
-    color: "#8E8E93",
-    fontSize: 10,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-    marginLeft: 4,
-    flex: 1,
-  },
+  sectionHeader: { flexDirection: "row", alignItems: "center", paddingVertical: 12, marginTop: 8 },
+  sectionTitle: { color: "#8E8E93", fontSize: 10, fontWeight: "600", letterSpacing: 0.5, marginLeft: 4, flex: 1 },
   addButtonSmall: { padding: 4 },
   sectionContent: { paddingHorizontal: 24, paddingBottom: 12 },
   emptySectionText: { color: "#666", fontSize: 13, fontStyle: "italic" },
   channelRow: { paddingVertical: 6 },
   channelText: { color: "#A3A2A8", fontSize: 14, paddingVertical: 4 },
   emptyState: { alignItems: "center", marginTop: 40, paddingHorizontal: 20 },
-  emptyStateText: {
-    color: "#666",
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  emptyStateText: { color: "#666", fontSize: 14, textAlign: "center", lineHeight: 20 },
   bottomPanelWrapper: { backgroundColor: "#2C2C2E" },
-  tabBar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingVertical: 12,
-    backgroundColor: "#1A1A1E",
-    borderTopWidth: 1,
-    borderTopColor: "#2C2C2E",
-  },
+  tabBar: { flexDirection: "row", justifyContent: "space-around", alignItems: "center", paddingVertical: 12, backgroundColor: "#1A1A1E", borderTopWidth: 1, borderTopColor: "#2C2C2E" },
   tabItem: { alignItems: "center", justifyContent: "center", flex: 1 },
-  tabAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  tabAvatar: { width: 24, height: 24, borderRadius: 12, justifyContent: "center", alignItems: "center" },
   tabAvatarText: { color: "#FFF", fontSize: 10, fontWeight: "bold" },
   tabAvatarImage: { width: 26, height: 26, borderRadius: 13 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalContent: {
-    width: "100%",
-    backgroundColor: "#2C2C2E",
-    borderRadius: 16,
-    padding: 24,
-  },
-  modalTitle: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 16,
-  },
-  modalInput: {
-    backgroundColor: "#1A1A1E",
-    color: "#FFF",
-    padding: 14,
-    borderRadius: 12,
-    fontSize: 16,
-    marginBottom: 20,
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center", padding: 24 },
+  modalContent: { width: "100%", backgroundColor: "#2C2C2E", borderRadius: 16, padding: 24 },
+  modalTitle: { color: "#FFF", fontSize: 18, fontWeight: "600", marginBottom: 16 },
+  modalInput: { backgroundColor: "#1A1A1E", color: "#FFF", padding: 14, borderRadius: 12, fontSize: 16, marginBottom: 20 },
   modalButtons: { flexDirection: "row", justifyContent: "space-between" },
-  modalBtnCancel: {
-    flex: 1,
-    height: 48,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 12,
-    backgroundColor: "#1A1A1E",
-    marginRight: 8,
-  },
+  modalBtnCancel: { flex: 1, height: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, backgroundColor: "#1A1A1E", marginRight: 8 },
   modalBtnCancelText: { color: "#FFF", fontSize: 16 },
-  modalBtnSave: {
-    flex: 1,
-    height: 48,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 12,
-    marginLeft: 8,
-  },
+  modalBtnSave: { flex: 1, height: 48, justifyContent: "center", alignItems: "center", borderRadius: 12, marginLeft: 8 },
   modalBtnSaveText: { color: "#FFF", fontSize: 16, fontWeight: "600" },
 });

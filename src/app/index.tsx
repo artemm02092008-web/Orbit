@@ -1,3 +1,4 @@
+// src/app/index.tsx
 import React from "react";
 import { WelcomeScreen } from "../screens/WelcomeScreen";
 

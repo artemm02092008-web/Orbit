@@ -10,14 +10,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useApp } from "../context/AppContext";
+import { useLanguage } from "../context/LanguageContext"; // <-- Импорт контекста
 import { COLORS } from "../theme/colors";
 import i18n from "../i18n";
 
-// Компонент флага
+// --- ПРАВИЛЬНАЯ ОТРИСОВКА ФЛАГОВ ---
 const FlagIcon = ({ country }) => {
   return (
     <View style={styles.flagContainer}>
+      {/* Россия */}
       {country === "ru" && (
         <View style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "#FFF" }} />
@@ -25,11 +26,18 @@ const FlagIcon = ({ country }) => {
           <View style={{ flex: 1, backgroundColor: "#D52B1E" }} />
         </View>
       )}
+
+      {/* США */}
       {country === "us" && (
         <View style={{ flex: 1, flexDirection: "column" }}>
           <View style={{ flex: 1, backgroundColor: "#B22234" }} />
           <View style={{ flex: 1, backgroundColor: "#FFF" }} />
           <View style={{ flex: 1, backgroundColor: "#B22234" }} />
+          <View style={{ flex: 1, backgroundColor: "#FFF" }} />
+          <View style={{ flex: 1, backgroundColor: "#B22234" }} />
+          <View style={{ flex: 1, backgroundColor: "#FFF" }} />
+          <View style={{ flex: 1, backgroundColor: "#B22234" }} />
+          {/* Кантон */}
           <View
             style={{
               position: "absolute",
@@ -42,10 +50,11 @@ const FlagIcon = ({ country }) => {
           />
         </View>
       )}
+
+      {/* Великобритания */}
       {country === "uk" && (
-        <View
-          style={{ flex: 1, backgroundColor: "#012169", position: "relative" }}
-        >
+        <View style={{ flex: 1, backgroundColor: "#012169", position: "relative" }}>
+          {/* Белый крест */}
           <View
             style={{
               position: "absolute",
@@ -64,6 +73,7 @@ const FlagIcon = ({ country }) => {
               left: "40%",
             }}
           />
+          {/* Красный крест */}
           <View
             style={{
               position: "absolute",
@@ -84,6 +94,8 @@ const FlagIcon = ({ country }) => {
           />
         </View>
       )}
+
+      {/* Германия */}
       {country === "de" && (
         <View style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "#000" }} />
@@ -91,6 +103,8 @@ const FlagIcon = ({ country }) => {
           <View style={{ flex: 1, backgroundColor: "#FFCE00" }} />
         </View>
       )}
+
+      {/* Франция */}
       {country === "fr" && (
         <View style={{ flex: 1, flexDirection: "row" }}>
           <View style={{ flex: 1, backgroundColor: "#002395" }} />
@@ -98,6 +112,8 @@ const FlagIcon = ({ country }) => {
           <View style={{ flex: 1, backgroundColor: "#ED2939" }} />
         </View>
       )}
+
+      {/* Испания */}
       {country === "es" && (
         <View style={{ flex: 1 }}>
           <View style={{ flex: 1, backgroundColor: "#AA151B" }} />
@@ -120,7 +136,7 @@ const LANGUAGES = [
 
 export const LanguageScreen = () => {
   const router = useRouter();
-  const { language, changeLanguage } = useApp();
+  const { lang, changeLanguage } = useLanguage(); // Используем контекст
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -135,19 +151,12 @@ export const LanguageScreen = () => {
           <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
         <View style={styles.orbitIndicator}>
-          <MaterialCommunityIcons
-            name="orbit"
-            size={16}
-            color={COLORS.primary}
-          />
+          <MaterialCommunityIcons name="orbit" size={16} color={COLORS.primary} />
           <Text style={styles.orbitText}>ORBIT</Text>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>{i18n.t("language")}</Text>
 
         <View style={styles.searchContainer}>
@@ -161,31 +170,29 @@ export const LanguageScreen = () => {
 
         <Text style={styles.sectionTitle}>{i18n.t("app_language")}</Text>
 
-        {LANGUAGES.map((lang) => {
+        {LANGUAGES.map((item) => {
+          // Оставляем вашу логику (если lang === "en", то активны и uk, и us)
           const isActive =
-            language === lang.id ||
-            (language === "en" && (lang.id === "uk" || lang.id === "us"));
+            lang === item.id ||
+            (lang === "en" && (item.id === "uk" || item.id === "us"));
+            
           return (
             <TouchableOpacity
-              key={lang.id}
+              key={item.id}
               style={[styles.langItem, isActive && styles.langItemActive]}
               onPress={() =>
                 changeLanguage(
-                  lang.id === "uk" || lang.id === "us" ? "en" : lang.id
+                  item.id === "uk" || item.id === "us" ? "en" : item.id
                 )
               }
             >
-              <FlagIcon country={lang.id} />
+              <FlagIcon country={item.id} />
               <View style={styles.langTextContainer}>
-                <Text style={styles.langName}>{lang.name}</Text>
-                <Text style={styles.langSub}>{lang.sub}</Text>
+                <Text style={styles.langName}>{item.name}</Text>
+                <Text style={styles.langSub}>{item.sub}</Text>
               </View>
               {isActive ? (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={24}
-                  color={COLORS.primary}
-                />
+                <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
               ) : (
                 <View style={styles.radioEmpty} />
               )}
@@ -199,10 +206,7 @@ export const LanguageScreen = () => {
         </View>
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.premiumButton}
-        onPress={() => router.push("/premium")}
-      >
+      <TouchableOpacity style={styles.premiumButton} onPress={() => router.push("/premium")}>
         <Text style={styles.premiumText}>{i18n.t("go_premium")}</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -222,12 +226,7 @@ const styles = StyleSheet.create({
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#FFF", fontSize: 16, marginLeft: 4 },
   orbitIndicator: { flexDirection: "row", alignItems: "center", gap: 4 },
-  orbitText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
+  orbitText: { color: "#FFF", fontSize: 14, fontWeight: "600", letterSpacing: 1 },
   scrollContainer: { paddingHorizontal: 24, paddingBottom: 100 },
   title: { fontSize: 32, fontWeight: "400", color: "#FFF", marginBottom: 24 },
   searchContainer: {
@@ -255,21 +254,9 @@ const styles = StyleSheet.create({
   langTextContainer: { flex: 1 },
   langName: { color: "#FFF", fontSize: 16, fontWeight: "500", marginBottom: 2 },
   langSub: { color: "#8E8E93", fontSize: 12 },
-  radioEmpty: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#666",
-  },
+  radioEmpty: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: "#666" },
   footerContainer: { alignItems: "center", marginTop: 32, marginBottom: 20 },
-  footerText: {
-    color: "#666",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 8,
-    lineHeight: 18,
-  },
+  footerText: { color: "#666", fontSize: 12, textAlign: "center", marginTop: 8, lineHeight: 18 },
   premiumButton: {
     position: "absolute",
     bottom: 30,
