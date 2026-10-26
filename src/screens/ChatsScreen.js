@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, 
-  TextInput, SafeAreaView, ActivityIndicator 
+  TextInput, ActivityIndicator 
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // <-- ИСПРАВЛЕН ИМПОРТ
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db, auth } from "../firebase/config";
-import { useTranslation } from "../hooks/useTranslation"; // <-- ПЕРЕВОДЫ
+import i18n from "../i18n"; // <-- ИМПОРТ СЛОВАРЯ
 
 const COLORS = {
   bg: "#1E1F22",
@@ -20,7 +21,6 @@ const COLORS = {
 
 export const ChatsScreen = () => {
   const router = useRouter();
-  const { t } = useTranslation(); // <-- ИНИЦИАЛИЗАЦИЯ
   const [searchText, setSearchText] = useState("");
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export const ChatsScreen = () => {
           
           {/* Заголовок с переводом */}
           <Text style={styles.headerTitle}>
-            {t({ ru: "Сообщения", en: "Messages", es: "Mensajes", fr: "Messages", de: "Nachrichten" })}
+            {i18n.t("messages")}
           </Text>
           
           {/* Иконка почты */}
@@ -79,13 +79,7 @@ export const ChatsScreen = () => {
           <View style={styles.searchBox}>
             <Ionicons name="search" size={18} color={COLORS.textMuted} />
             <TextInput
-              placeholder={t({ 
-                ru: "Поиск пользователей...", 
-                en: "Search users...",
-                es: "Buscar usuarios...",
-                fr: "Rechercher des utilisateurs...",
-                de: "Benutzer suchen..."
-              })}
+              placeholder={i18n.t("search_messages") + "..."} 
               placeholderTextColor={COLORS.textMuted}
               style={styles.searchInput}
               value={searchText}
@@ -102,13 +96,7 @@ export const ChatsScreen = () => {
             <ActivityIndicator size="large" color={COLORS.accent} style={{ marginTop: 50 }} />
           ) : filteredUsers.length === 0 ? (
             <Text style={{ color: COLORS.textMuted, textAlign: 'center', marginTop: 20 }}>
-              {t({ 
-                ru: "Пользователи не найдены. Пригласите друзей!", 
-                en: "No users found. Invite friends!",
-                es: "No se encontraron usuarios. ¡Invita a amigos!",
-                fr: "Aucun utilisateur trouvé. Invitez des amis !",
-                de: "Keine Benutzer gefunden. Freunde einladen!"
-              })}
+              {i18n.t("members_not_found")}
             </Text>
           ) : (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -119,10 +107,10 @@ export const ChatsScreen = () => {
                   </View>
                   <View style={styles.chatInfo}>
                     <Text style={styles.chatName} numberOfLines={1}>
-                      {u.displayName || t({ ru: "Без имени", en: "No name", es: "Sin nombre", fr: "Sans nom", de: "Kein Name" })}
+                      {u.displayName || i18n.t("user")}
                     </Text>
                     <Text style={styles.chatMessage} numberOfLines={1}>
-                      {u.email || t({ ru: "Нет почты", en: "No email", es: "Sin correo", fr: "Pas d'e-mail", de: "Keine E-Mail" })}
+                      {u.email || i18n.t("no_email")}
                     </Text>
                   </View>
                   <Ionicons name="chatbubble-outline" size={20} color={COLORS.textMuted} />
@@ -157,7 +145,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     flex: 1,
     textAlign: "center",
-    marginLeft: 10, // Чтобы компенсировать кнопку назад
+    marginLeft: 10, 
   },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchBox: {

@@ -14,11 +14,11 @@ import { COLORS } from "../theme/colors";
 import i18n from "../i18n";
 
 const FRAMES = [
-  { id: "default", name: "Обычная", color: COLORS.primary, icon: null },
-  { id: "gold", name: "Золотая", color: "#FFD700", icon: "crown" },
-  { id: "purple", name: "Фиолетовая", color: "#9D4EDD", icon: "star" },
-  { id: "green", name: "Зеленая", color: "#4ADE80", icon: "leaf" },
-  { id: "fire", name: "Огненная", color: "#FF4500", icon: "fire" },
+  { id: "default", nameKey: "frame_default", color: COLORS.primary, icon: null },
+  { id: "gold", nameKey: "frame_gold", color: "#FFD700", icon: "crown" },
+  { id: "purple", nameKey: "frame_purple", color: "#9D4EDD", icon: "star" },
+  { id: "green", nameKey: "frame_green", color: "#4ADE80", icon: "leaf" },
+  { id: "fire", nameKey: "frame_fire", color: "#FF4500", icon: "fire" },
 ];
 
 export const FramesScreen = () => {
@@ -29,12 +29,12 @@ export const FramesScreen = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <Text style={styles.lockText}>Рамки доступны только Premium</Text>
+          <Text style={styles.lockText}>{i18n.t("frames_premium_only")}</Text>
           <TouchableOpacity
             onPress={() => router.push("/premium")}
             style={styles.upgradeBtn}
           >
-            <Text style={styles.upgradeText}>Стать Premium</Text>
+            <Text style={styles.upgradeText}>{i18n.t("become_premium")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -53,7 +53,7 @@ export const FramesScreen = () => {
         </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>Выбор рамки</Text>
+        <Text style={styles.title}>{i18n.t("frames_title")}</Text>
         <View style={styles.grid}>
           {FRAMES.map((frame) => {
             const isActive =
@@ -80,7 +80,7 @@ export const FramesScreen = () => {
                     </View>
                   )}
                 </View>
-                <Text style={styles.frameName}>{frame.name}</Text>
+                <Text style={styles.frameName}>{i18n.t(frame.nameKey)}</Text>
                 {isActive && (
                   <Ionicons
                     name="checkmark-circle"

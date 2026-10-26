@@ -10,7 +10,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { useApp } from "../context/AppContext";
-import { useTranslation } from "../hooks/useTranslation"; // <-- ХУК ПЕРЕВОДА
+import i18n from "../i18n"; // <-- ИМПОРТ ПЕРЕВОДОВ
+import { AnimatedLogo } from "../components/AnimatedLogo"; 
 
 const COLORS = {
   bg: "#0F0E13",
@@ -22,7 +23,6 @@ const COLORS = {
 
 export const SettingsScreen = () => {
   const router = useRouter();
-  const { t } = useTranslation(); // <-- ИНИЦИАЛИЗАЦИЯ
   const { language, themeColors } = useApp() || {};
   const primary = themeColors?.primary || "#8A56FF";
 
@@ -54,16 +54,11 @@ export const SettingsScreen = () => {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.backText}>
-            {t({ ru: "Назад", en: "Back", es: "Atrás", fr: "Retour", de: "Zurück" })}
-          </Text>
+          <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
-        <View style={styles.orbitIndicator}>
-          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Circle cx={12} cy={12} r={9} stroke={primary} strokeWidth={2} />
-            <Circle cx={19} cy={5} r={2} fill={primary} />
-          </Svg>
-          <Text style={styles.orbitText}>ORBIT</Text>
+        
+        <View style={styles.logoContainer}>
+          <AnimatedLogo size={28} />
         </View>
       </View>
 
@@ -71,9 +66,7 @@ export const SettingsScreen = () => {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageTitle}>
-          {t({ ru: "Настройки", en: "Settings", es: "Ajustes", fr: "Paramètres", de: "Einstellungen" })}
-        </Text>
+        <Text style={styles.pageTitle}>{i18n.t("settings")}</Text>
 
         {/* Premium Card */}
         <TouchableOpacity
@@ -94,17 +87,9 @@ export const SettingsScreen = () => {
             </Svg>
           </View>
           <View style={styles.premiumTextContainer}>
-            <Text style={styles.premiumTitle}>
-              {t({ ru: "Orbit Premium", en: "Orbit Premium", es: "Orbit Premium", fr: "Orbit Premium", de: "Orbit Premium" })}
-            </Text>
+            <Text style={styles.premiumTitle}>{i18n.t("premium")}</Text>
             <Text style={styles.premiumSubtitle}>
-              {t({
-                ru: "Больше пространства для общения",
-                en: "More space for communication",
-                es: "Más espacio para comunicarse",
-                fr: "Plus d'espace pour communiquer",
-                de: "Mehr Platz für Kommunikation"
-              })}
+              {i18n.t("premium_settings_subtitle") || "Больше пространства для общения"}
             </Text>
           </View>
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -122,22 +107,22 @@ export const SettingsScreen = () => {
         <View style={styles.sectionCard}>
           <MenuItem
             icon={<AccountIcon />}
-            title={t({ ru: "Учётная запись", en: "Account", es: "Cuenta", fr: "Compte", de: "Konto" })}
+            title={i18n.t("account")}
             onPress={() => router.push("/profile")}
           />
           <MenuItem
             icon={<BellIcon />}
-            title={t({ ru: "Уведомления", en: "Notifications", es: "Notificaciones", fr: "Notifications", de: "Benachrichtigungen" })}
+            title={i18n.t("notifications")}
             onPress={() => {}}
           />
           <MenuItem
             icon={<PaletteIcon />}
-            title={t({ ru: "Внешний вид", en: "Appearance", es: "Apariencia", fr: "Apparence", de: "Erscheinungsbild" })}
+            title={i18n.t("appearance")}
             onPress={() => router.push("/appearance")}
           />
           <MenuItem
             icon={<LanguageIcon />}
-            title={t({ ru: "Язык", en: "Language", es: "Idioma", fr: "Langue", de: "Sprache" })}
+            title={i18n.t("language")}
             value={getCurrentLanguageName()}
             onPress={() => router.push("/language")}
             isLast
@@ -145,31 +130,27 @@ export const SettingsScreen = () => {
         </View>
 
         {/* Support Section */}
-        <Text style={styles.sectionLabel}>
-          {t({ ru: "Поддержка", en: "Support", es: "Soporte", fr: "Support", de: "Support" })}
-        </Text>
+        <Text style={styles.sectionLabel}>{i18n.t("support")}</Text>
         <View style={styles.sectionCard}>
           <MenuItem 
             icon={<HelpIcon />} 
-            title={t({ ru: "Поддержка", en: "Support", es: "Soporte", fr: "Support", de: "Support" })} 
+            title={i18n.t("support")} 
             onPress={() => {}} 
           />
           <MenuItem
             icon={<LogIcon />}
-            title={t({ ru: "Отправить логи", en: "Send logs", es: "Enviar registros", fr: "Envoyer les logs", de: "Protokolle senden" })}
+            title={i18n.t("send_logs")}
             onPress={() => {}}
             isLast
           />
         </View>
 
         {/* Updates Section */}
-        <Text style={styles.sectionLabel}>
-          {t({ ru: "Что нового", en: "What's new", es: "Novedades", fr: "Nouveautés", de: "Was ist neu" })}
-        </Text>
+        <Text style={styles.sectionLabel}>{i18n.t("what_new")}</Text>
         <View style={styles.sectionCard}>
           <MenuItem
             icon={<SparklesIcon color={primary} />}
-            title={t({ ru: "Обновления Orbit", en: "Orbit updates", es: "Actualizaciones de Orbit", fr: "Mises à jour Orbit", de: "Orbit-Updates" })}
+            title={i18n.t("orbit_updates")}
             value="2.8"
             onPress={() => {}}
             isLast
@@ -190,20 +171,17 @@ export const SettingsScreen = () => {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.logoutText}>
-            {t({ ru: "Выйти", en: "Log out", es: "Cerrar sesión", fr: "Déconnexion", de: "Abmelden" })}
-          </Text>
+          <Text style={styles.logoutText}>{i18n.t("logout")}</Text>
         </TouchableOpacity>
 
         <Text style={styles.footerText}>
-          Orbit · {t({ ru: "версия", en: "version", es: "versión", fr: "version", de: "Version" })} 2.8.0
+          Orbit · {i18n.t("version")} 2.8.0
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-// --- Компонент строки меню ---
 const MenuItem = ({ icon, title, value, onPress, isLast }) => (
   <TouchableOpacity
     style={[styles.menuItem, !isLast && styles.menuItemBorder]}
@@ -224,7 +202,7 @@ const MenuItem = ({ icon, title, value, onPress, isLast }) => (
   </TouchableOpacity>
 );
 
-// --- ИКОНКИ (полностью прописаны, чтобы не было ошибок) ---
+// --- ИКОНКИ ---
 const AccountIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
     <Path
@@ -339,8 +317,10 @@ const styles = StyleSheet.create({
   },
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#A3A2A8", fontSize: 16, marginLeft: 4 },
-  orbitIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
-  orbitText: { color: "#FFF", fontSize: 14, fontWeight: "600", letterSpacing: 1 },
+  logoContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
   scrollContainer: { paddingHorizontal: 16, paddingBottom: 40 },
   pageTitle: { fontSize: 32, fontWeight: "400", color: "#FFF", marginBottom: 20 },
   premiumCard: {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -26,6 +26,14 @@ export const CreateServerScreen = () => {
   const [serverName, setServerName] = useState(i18n.t("workshop"));
   const [serverType, setServerType] = useState("project");
   const [image, setImage] = useState(null);
+  const [isNameEdited, setIsNameEdited] = useState(false); // <-- Добавили флаг
+
+  // <-- ДОБАВИЛИ: Обновление названия при смене языка, если юзер не трогал поле
+  useEffect(() => {
+    if (!isNameEdited) {
+      setServerName(i18n.t("workshop"));
+    }
+  }, [i18n.locale]);
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -123,7 +131,10 @@ export const CreateServerScreen = () => {
           <TextInput
             style={styles.input}
             value={serverName}
-            onChangeText={setServerName}
+            onChangeText={(text) => {
+              setServerName(text);
+              setIsNameEdited(true); // <-- Юзер начал вводить текст
+            }}
             placeholder={i18n.t("enter_name") || "Введите название"}
             placeholderTextColor="#666"
           />

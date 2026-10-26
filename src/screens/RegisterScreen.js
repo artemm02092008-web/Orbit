@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../firebase/config";
 import { COLORS } from "../theme/colors";
 import { CustomButton } from "../components/CustomButton";
+import i18n from "../i18n"; // <-- ДОБАВИЛИ ИМПОРТ ПЕРЕВОДОВ
 
 export const RegisterScreen = () => {
   const router = useRouter();
@@ -27,22 +28,21 @@ export const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Универсальная функция "Назад"
   const handleBack = () => {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/"); // Если истории нет, идем на главный
+      router.replace("/");
     }
   };
 
   const handleRegister = async () => {
     if (!name || !username || !email || !password) {
-      Alert.alert("Ошибка", "Пожалуйста, заполните все поля");
+      Alert.alert(i18n.t("error"), i18n.t("fill_fields"));
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Ошибка", "Пароль должен быть не менее 6 символов");
+      Alert.alert(i18n.t("error"), i18n.t("error_password_length") || "Пароль должен быть не менее 6 символов");
       return;
     }
 
@@ -57,8 +57,8 @@ export const RegisterScreen = () => {
       router.replace("/workshop");
     } catch (error) {
       Alert.alert(
-        "Ошибка регистрации",
-        "Этот email уже используется или введен неверно"
+        i18n.t("error_register") || "Ошибка регистрации",
+        i18n.t("error_email_used") || "Этот email уже используется или введен неверно"
       );
     } finally {
       setLoading(false);
@@ -73,10 +73,9 @@ export const RegisterScreen = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          {/* ИЗМЕНЕНО: используем handleBack */}
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color="#FFF" />
-            <Text style={styles.backText}>Назад</Text>
+            <Text style={styles.backText}>{i18n.t("back")}</Text>
           </TouchableOpacity>
           <View style={styles.orbitIndicator}>
             <MaterialCommunityIcons
@@ -96,18 +95,16 @@ export const RegisterScreen = () => {
           />
           <View style={styles.logoDot} />
         </View>
-        <Text style={styles.title}>Создать аккаунт</Text>
-        <Text style={styles.subtitle}>
-          Будьте ближе к своим. Присоединяйтесь к Orbit.
-        </Text>
+        <Text style={styles.title}>{i18n.t("register_title")}</Text>
+        <Text style={styles.subtitle}>{i18n.t("register_subtitle")}</Text>
 
-        <Text style={styles.sectionTitle}>ВАШ ПРОФИЛЬ</Text>
+        <Text style={styles.sectionTitle}>{i18n.t("profile_section")}</Text>
         <View style={styles.inputContainer}>
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Имя</Text>
+            <Text style={styles.inputLabel}>{i18n.t("name")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Введите ваше имя"
+              placeholder={i18n.t("enter_name") || "Введите ваше имя"}
               placeholderTextColor="#666"
               value={name}
               onChangeText={setName}
@@ -115,7 +112,7 @@ export const RegisterScreen = () => {
           </View>
           <View style={styles.divider} />
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Имя пользователя</Text>
+            <Text style={styles.inputLabel}>{i18n.t("username")}</Text>
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
@@ -132,15 +129,15 @@ export const RegisterScreen = () => {
           </View>
         </View>
         <Text style={styles.hintText}>
-          По этому имени вас смогут найти в Orbit.
+          {i18n.t("username_hint") || "По этому имени вас смогут найти в Orbit."}
         </Text>
 
         <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
-          ДАННЫЕ ДЛЯ ВХОДА
+          {i18n.t("login_data")}
         </Text>
         <View style={styles.inputContainer}>
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Электронная почта</Text>
+            <Text style={styles.inputLabel}>{i18n.t("email")}</Text>
             <TextInput
               style={styles.input}
               placeholder="example@mail.ru"
@@ -154,11 +151,11 @@ export const RegisterScreen = () => {
           </View>
           <View style={styles.divider} />
           <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Пароль</Text>
+            <Text style={styles.inputLabel}>{i18n.t("password")}</Text>
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, { flex: 1 }]}
-                placeholder="Минимум 6 символов"
+                placeholder={i18n.t("password_placeholder")}
                 placeholderTextColor="#666"
                 secureTextEntry={!showPassword}
                 autoComplete="password-new"
@@ -181,7 +178,7 @@ export const RegisterScreen = () => {
           <View style={styles.strengthBarActive} />
           <View style={styles.strengthBarActive} />
           <View style={styles.strengthBarInactive} />
-          <Text style={styles.strengthText}>Надёжный пароль</Text>
+          <Text style={styles.strengthText}>{i18n.t("password_strong") || "Надёжный пароль"}</Text>
         </View>
 
         <View style={styles.checkboxRow}>
@@ -189,15 +186,15 @@ export const RegisterScreen = () => {
             <Ionicons name="checkmark" size={14} color="#FFF" />
           </TouchableOpacity>
           <Text style={styles.checkboxText}>
-            Я принимаю{" "}
-            <Text style={styles.linkText}>Условия использования</Text>
-            {"\n"}и{" "}
-            <Text style={styles.linkText}>Политику конфиденциальности</Text>
+            {i18n.t("i_accept") || "Я принимаю"}{" "}
+            <Text style={styles.linkText}>{i18n.t("terms_of_use") || "Условия использования"}</Text>
+            {"\n"}{i18n.t("and") || "и"}{" "}
+            <Text style={styles.linkText}>{i18n.t("privacy_policy") || "Политику конфиденциальности"}</Text>
           </Text>
         </View>
 
         <CustomButton
-          title={loading ? "Создание..." : "Создать аккаунт"}
+          title={loading ? i18n.t("creating") || "Создание..." : i18n.t("create_account")}
           variant="primary"
           showArrow={!loading}
           onPress={handleRegister}
@@ -208,7 +205,8 @@ export const RegisterScreen = () => {
           onPress={() => router.push("/login")}
         >
           <Text style={styles.loginLinkText}>
-            Уже есть аккаунт? <Text style={{ color: "#FFF" }}>Войти</Text>
+            {i18n.t("have_account") || "Уже есть аккаунт?"}{" "}
+            <Text style={{ color: "#FFF" }}>{i18n.t("login_button")}</Text>
           </Text>
         </TouchableOpacity>
 
@@ -218,7 +216,7 @@ export const RegisterScreen = () => {
             size={12}
             color={COLORS.textMuted}
           />
-          <Text style={styles.disclaimerText}>Ваши данные — только ваши.</Text>
+          <Text style={styles.disclaimerText}>{i18n.t("disclaimer")}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -8,11 +8,13 @@ export default function MembersPage() {
     <MembersScreen
       onBack={() => router.back()}
       onOpenChat={(userId: string) => {
-        // Приводим путь к any, чтобы TS не ругался на динамический ID
         router.push(`/chat/${userId}` as any);
       }}
       onStartCall={(userId: string) => {
-        router.push(`/call/${userId}` as any);
+        router.push({
+          pathname: "/call",
+          params: { targetId: userId }
+        } as any);
       }}
     />
   );

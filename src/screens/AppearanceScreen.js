@@ -12,6 +12,7 @@ import Svg, { Path, Circle } from "react-native-svg";
 import Slider from "@react-native-community/slider";
 import { useRouter } from "expo-router";
 import { useApp } from "../context/AppContext";
+import i18n from "../i18n"; // <-- ДОБАВИЛИ ИМПОРТ
 
 const COLORS = {
   bg: "#0F0E13",
@@ -22,14 +23,13 @@ const COLORS = {
 };
 
 const THEMES = [
-  { id: "purple", name: "Фиолетовый", color: "#8A56FF" },
-  { id: "blue", name: "Синий", color: "#4F5DED" },
-  { id: "green", name: "Зеленый", color: "#00C853" },
+  { id: "purple", name: i18n.t("theme_purple"), color: "#8A56FF" },
+  { id: "blue", name: i18n.t("theme_blue"), color: "#4F5DED" },
+  { id: "green", name: i18n.t("theme_green"), color: "#00C853" },
 ];
 
 export const AppearanceScreen = () => {
   const router = useRouter();
-  // Берем глобальную тему и функцию смены из контекста
   const { activeTheme, changeTheme } = useApp() || {};
 
   const [useSystemTheme, setUseSystemTheme] = useState(true);
@@ -37,7 +37,6 @@ export const AppearanceScreen = () => {
   const [scale, setScale] = useState(100);
   const [defaultTextSize, setDefaultTextSize] = useState(true);
 
-  // Текущая тема (если контекст не загрузился, по умолчанию фиолетовая)
   const currentTheme = activeTheme || "purple";
   const activeThemeColor =
     THEMES.find((t) => t.id === currentTheme)?.color || "#8A56FF";
@@ -47,16 +46,14 @@ export const AppearanceScreen = () => {
     else router.replace("/settings");
   };
 
-  // Обработчик выбора темы
   const handleSelectTheme = (themeId) => {
     if (changeTheme) {
-      changeTheme(themeId); // Сохраняет в AsyncStorage и обновляет всё приложение
+      changeTheme(themeId);
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -68,38 +65,27 @@ export const AppearanceScreen = () => {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.backText}>Назад</Text>
+          <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
         <View style={styles.orbitIndicator}>
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Circle
-              cx={12}
-              cy={12}
-              r={9}
-              stroke={activeThemeColor}
-              strokeWidth={2}
-            />
+            <Circle cx={12} cy={12} r={9} stroke={activeThemeColor} strokeWidth={2} />
             <Circle cx={19} cy={5} r={2} fill={activeThemeColor} />
           </Svg>
           <Text style={styles.orbitText}>ORBIT</Text>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.pageTitle}>Внешний вид</Text>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <Text style={styles.pageTitle}>{i18n.t("appearance")}</Text>
 
         {/* --- ТЕМА ПРИЛОЖЕНИЯ --- */}
-        <Text style={styles.sectionLabel}>Тема приложения</Text>
+        <Text style={styles.sectionLabel}>{i18n.t("app_theme")}</Text>
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
             <View style={styles.rowTextContainer}>
-              <Text style={styles.rowTitle}>Как тема устройства</Text>
-              <Text style={styles.rowSubtitle}>
-                Сейчас используется тёмная тема
-              </Text>
+              <Text style={styles.rowTitle}>{i18n.t("use_system_theme")}</Text>
+              <Text style={styles.rowSubtitle}>{i18n.t("dark_theme_used")}</Text>
             </View>
             <Switch
               value={useSystemTheme}
@@ -110,7 +96,7 @@ export const AppearanceScreen = () => {
           </View>
           <View style={styles.row}>
             <Text style={[styles.rowTitle, { flex: 1 }]}>
-              Синхронизировать между клиентами
+              {i18n.t("sync_clients")}
             </Text>
             <Switch
               value={syncAcrossClients}
@@ -122,11 +108,11 @@ export const AppearanceScreen = () => {
         </View>
 
         {/* --- МАСШТАБ И ТЕКСТ --- */}
-        <Text style={styles.sectionLabel}>Масштаб и текст</Text>
+        <Text style={styles.sectionLabel}>{i18n.t("scale_text")}</Text>
         <View style={styles.card}>
           <View style={styles.sliderContainer}>
             <View style={styles.sliderHeader}>
-              <Text style={styles.rowTitle}>Уровень масштабирования</Text>
+              <Text style={styles.rowTitle}>{i18n.t("zoom_level")}</Text>
               <Text style={[styles.rowTitle, { color: activeThemeColor }]}>
                 {Math.round(scale)}%
               </Text>
@@ -152,7 +138,7 @@ export const AppearanceScreen = () => {
 
           <View style={styles.row}>
             <Text style={[styles.rowTitle, { flex: 1 }]}>
-              Стандартный размер текста в чате
+              {i18n.t("default_text_size")}
             </Text>
             <Switch
               value={defaultTextSize}
@@ -164,7 +150,7 @@ export const AppearanceScreen = () => {
         </View>
 
         {/* --- ТЕМЫ (ВЫБОР) --- */}
-        <Text style={styles.sectionLabel}>Темы</Text>
+        <Text style={styles.sectionLabel}>{i18n.t("themes")}</Text>
         <View style={styles.themesContainer}>
           {THEMES.map((theme) => {
             const isActive = currentTheme === theme.id;
@@ -172,7 +158,7 @@ export const AppearanceScreen = () => {
               <TouchableOpacity
                 key={theme.id}
                 style={styles.themeBlock}
-                onPress={() => handleSelectTheme(theme.id)} // <-- Меняет тему во всем приложении
+                onPress={() => handleSelectTheme(theme.id)}
               >
                 <View
                   style={[
@@ -182,37 +168,17 @@ export const AppearanceScreen = () => {
                 >
                   <View style={styles.miniChat}>
                     <View style={styles.miniAvatarRow}>
-                      <View
-                        style={[
-                          styles.miniDot,
-                          { backgroundColor: theme.color },
-                        ]}
-                      />
+                      <View style={[styles.miniDot, { backgroundColor: theme.color }]} />
                       <View style={styles.miniLine} />
                     </View>
                     <View style={styles.miniBubble} />
-                    <View
-                      style={[
-                        styles.miniBubbleRight,
-                        { backgroundColor: theme.color },
-                      ]}
-                    />
+                    <View style={[styles.miniBubbleRight, { backgroundColor: theme.color }]} />
                   </View>
                 </View>
                 <Text style={styles.themeName}>{theme.name}</Text>
-                <View
-                  style={[
-                    styles.radio,
-                    isActive && { borderColor: theme.color },
-                  ]}
-                >
+                <View style={[styles.radio, isActive && { borderColor: theme.color }]}>
                   {isActive && (
-                    <View
-                      style={[
-                        styles.radioInner,
-                        { backgroundColor: theme.color },
-                      ]}
-                    />
+                    <View style={[styles.radioInner, { backgroundColor: theme.color }]} />
                   )}
                 </View>
               </TouchableOpacity>
@@ -237,44 +203,21 @@ const styles = StyleSheet.create({
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#A3A2A8", fontSize: 16, marginLeft: 4 },
   orbitIndicator: { flexDirection: "row", alignItems: "center", gap: 6 },
-  orbitText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 1,
-  },
-
+  orbitText: { color: "#FFF", fontSize: 14, fontWeight: "600", letterSpacing: 1 },
   scrollContainer: { paddingHorizontal: 16, paddingBottom: 40 },
-  pageTitle: {
-    fontSize: 32,
-    fontWeight: "400",
-    color: "#FFF",
-    marginBottom: 24,
-  },
+  pageTitle: { fontSize: 32, fontWeight: "400", color: "#FFF", marginBottom: 24 },
   sectionLabel: { fontSize: 14, color: "#656469", marginBottom: 12 },
-
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    marginBottom: 24,
-    overflow: "hidden",
-  },
+  card: { backgroundColor: COLORS.card, borderRadius: 16, marginBottom: 24, overflow: "hidden" },
   row: { flexDirection: "row", alignItems: "center", padding: 16 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
   rowTextContainer: { flex: 1 },
   rowTitle: { color: "#FFF", fontSize: 16, fontWeight: "500" },
   rowSubtitle: { color: COLORS.textSub, fontSize: 12, marginTop: 2 },
-
   sliderContainer: { padding: 16 },
-  sliderHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
+  sliderHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
   sliderLabels: { flexDirection: "row", justifyContent: "space-between" },
   sliderLabelText: { color: COLORS.textSub, fontSize: 12 },
   divider: { height: 1, backgroundColor: COLORS.border },
-
   themesContainer: { flexDirection: "row", justifyContent: "space-between" },
   themeBlock: { width: "30%", alignItems: "center" },
   themePreview: {
@@ -290,24 +233,9 @@ const styles = StyleSheet.create({
   miniChat: { flex: 1, justifyContent: "center", gap: 6 },
   miniAvatarRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   miniDot: { width: 8, height: 8, borderRadius: 4 },
-  miniLine: {
-    width: 20,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#3A3A3C",
-  },
-  miniBubble: {
-    width: "70%",
-    height: 12,
-    borderRadius: 4,
-    backgroundColor: "#2A2930",
-  },
-  miniBubbleRight: {
-    width: "60%",
-    height: 14,
-    borderRadius: 4,
-    alignSelf: "flex-end",
-  },
+  miniLine: { width: 20, height: 4, borderRadius: 2, backgroundColor: "#3A3A3C" },
+  miniBubble: { width: "70%", height: 12, borderRadius: 4, backgroundColor: "#2A2930" },
+  miniBubbleRight: { width: "60%", height: 14, borderRadius: 4, alignSelf: "flex-end" },
   themeName: { color: "#A3A2A8", fontSize: 12, marginTop: 8 },
   radio: {
     width: 20,

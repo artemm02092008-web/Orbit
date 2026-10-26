@@ -27,7 +27,6 @@ export const ServerSettingsScreen = () => {
   const [newName, setNewName] = useState("");
   const [expandedSection, setExpandedSection] = useState(null);
 
-  // Состояния для создания роли
   const [isRoleModalVisible, setRoleModalVisible] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
 
@@ -44,7 +43,7 @@ export const ServerSettingsScreen = () => {
   const handleDelete = () => {
     Alert.alert(
       i18n.t("delete_server") || "Удалить сервер?",
-      "Это действие нельзя отменить.",
+      i18n.t("delete_confirmation") || "Это действие нельзя отменить.",
       [
         { text: i18n.t("cancel") || "Отмена", style: "cancel" },
         {
@@ -73,7 +72,7 @@ export const ServerSettingsScreen = () => {
 
   const handleCreateRole = async () => {
     if (!newRoleName.trim()) {
-      Alert.alert("Ошибка", "Введите название роли");
+      Alert.alert(i18n.t("error"), i18n.t("error_enter_role_name") || "Введите название роли");
       return;
     }
     await createRole(activeServer.id, {
@@ -86,12 +85,12 @@ export const ServerSettingsScreen = () => {
 
   const handleDeleteRole = (roleId) => {
     Alert.alert(
-      "Удалить роль?",
-      "Вы уверены, что хотите удалить эту роль?",
+      i18n.t("delete_role") || "Удалить роль?",
+      i18n.t("delete_role_confirmation") || "Вы уверены, что хотите удалить эту роль?",
       [
-        { text: "Отмена", style: "cancel" },
+        { text: i18n.t("cancel") || "Отмена", style: "cancel" },
         {
-          text: "Удалить",
+          text: i18n.t("delete") || "Удалить",
           style: "destructive",
           onPress: () => deleteRole(activeServer.id, roleId),
         },
@@ -150,14 +149,16 @@ export const ServerSettingsScreen = () => {
                     </View>
                   ))
                 ) : (
-                  <Text style={styles.placeholderText}>Ролей пока нет</Text>
+                  <Text style={styles.placeholderText}>
+                    {i18n.t("no_roles") || "Ролей пока нет"}
+                  </Text>
                 )}
                 <TouchableOpacity
                   style={styles.addRoleBtn}
                   onPress={() => setRoleModalVisible(true)}
                 >
                   <Feather name="plus" size={16} color={COLORS.primary} />
-                  <Text style={styles.addRoleText}>Создать роль</Text>
+                  <Text style={styles.addRoleText}>{i18n.t("create_role") || "Создать роль"}</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -210,7 +211,7 @@ export const ServerSettingsScreen = () => {
           <View style={styles.serverInfo}>
             <Text style={styles.serverName}>{activeServer.name}</Text>
             <Text style={styles.serverDesc}>
-              {i18n.t("server_type") || "Сервер для совместных проектов"}
+              {i18n.t("server_desc") || "Сервер для совместных проектов"}
             </Text>
           </View>
           <TouchableOpacity onPress={handleOpenRename}>
@@ -321,12 +322,12 @@ export const ServerSettingsScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Создать роль</Text>
+            <Text style={styles.modalTitle}>{i18n.t("create_role") || "Создать роль"}</Text>
             <TextInput
               style={styles.modalInput}
               value={newRoleName}
               onChangeText={setNewRoleName}
-              placeholder="Название роли (например, «Администратор»)"
+              placeholder={i18n.t("role_name_placeholder") || "Название роли (например, «Администратор»)"}
               placeholderTextColor="#666"
             />
             <View style={styles.modalButtons}>
@@ -334,13 +335,13 @@ export const ServerSettingsScreen = () => {
                 style={styles.modalBtnCancel}
                 onPress={() => setRoleModalVisible(false)}
               >
-                <Text style={styles.modalBtnCancelText}>Отмена</Text>
+                <Text style={styles.modalBtnCancelText}>{i18n.t("cancel") || "Отмена"}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalBtnSave}
                 onPress={handleCreateRole}
               >
-                <Text style={styles.modalBtnSaveText}>Создать</Text>
+                <Text style={styles.modalBtnSaveText}>{i18n.t("create") || "Создать"}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -362,12 +363,10 @@ const styles = StyleSheet.create({
   },
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#FFF", fontSize: 14, marginLeft: 4 },
-  
   logoContainer: {
     justifyContent: "center",
     alignItems: "center",
   },
-
   scrollContainer: { paddingHorizontal: 24, paddingBottom: 40 },
   title: {
     fontSize: 28,
@@ -446,7 +445,6 @@ const styles = StyleSheet.create({
     borderBottomColor: "#3A3A3C",
   },
   placeholderText: { color: "#666", fontSize: 14, fontStyle: "italic" },
-  
   roleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -478,7 +476,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 15,
   },
-  
   deleteButton: {
     backgroundColor: "rgba(255, 69, 58, 0.1)",
     paddingVertical: 16,
@@ -493,8 +490,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 18,
   },
-  
-  // ИСПРАВЛЕНО: модальное окно стало меньше
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
@@ -504,11 +499,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "100%",
-    maxWidth: 340, // <-- Ограничили максимальную ширину
+    maxWidth: 340,
     backgroundColor: "#2C2C2E",
     borderRadius: 16,
-    padding: 20, // <-- Чуть уменьшили внутренний отступ
-    alignSelf: "center", // <-- Центрируем по горизонтали
+    padding: 20,
+    alignSelf: "center",
   },
   modalTitle: {
     color: "#FFF",
@@ -521,7 +516,7 @@ const styles = StyleSheet.create({
     color: "#FFF",
     borderRadius: 12,
     paddingHorizontal: 16,
-    height: 48, // <-- Чуть уменьшили высоту
+    height: 48,
     marginBottom: 20,
     ...(Platform.OS === "web" && { outlineStyle: "none" }),
   },
@@ -532,7 +527,7 @@ const styles = StyleSheet.create({
   },
   modalBtnCancel: {
     flex: 1,
-    height: 44, // <-- Чуть уменьшили высоту кнопок
+    height: 44,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 12,

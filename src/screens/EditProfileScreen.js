@@ -37,7 +37,7 @@ export const EditProfileScreen = () => {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert(i18n.t("error"), "Введите имя");
+      Alert.alert(i18n.t("error"), i18n.t("fill_fields")); // <-- ЗАМЕНИЛИ ТЕКСТ
       return;
     }
     await updateUserProfile(name, image);

@@ -20,12 +20,12 @@ import {
   updateDoc,
   deleteDoc,
   arrayUnion,
-  addDoc, // <-- ДОБАВЛЕНО
-  getDoc, // <-- ДОБАВЛЕНО
+  addDoc,
+  getDoc,
 } from "firebase/firestore";
 import { auth, db } from "../firebase/config";
 import { AnimatedLogo } from "../components/AnimatedLogo";
-import { useTranslation } from "../hooks/useTranslation";
+import i18n from "../i18n"; // <-- ИМПОРТ ПЕРЕВОДОВ
 
 const COLORS = {
   bg: "#1C1C1E",
@@ -39,7 +39,6 @@ const COLORS = {
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
   
   const [showMenu, setShowMenu] = useState(false);
   const [requests, setRequests] = useState([]);
@@ -92,14 +91,8 @@ export default function NotificationsScreen() {
     } catch (error) {
       console.log(error);
       Alert.alert(
-        t({ ru: "Ошибка", en: "Error", es: "Error", fr: "Erreur", de: "Fehler" }),
-        t({ 
-          ru: "Не удалось обработать запрос", 
-          en: "Could not process request",
-          es: "No se pudo procesar la solicitud",
-          fr: "Impossible de traiter la demande",
-          de: "Anfrage konnte nicht bearbeitet werden"
-        })
+        i18n.t("error"),
+        i18n.t("error_process_request") || "Не удалось обработать запрос"
       );
     }
   };
@@ -109,55 +102,41 @@ export default function NotificationsScreen() {
     try {
       const userId = auth.currentUser.uid;
       
-      // 1. Получаем данные оригинального сервера
       const serverRef = doc(db, "servers", notification.serverId);
       const serverSnap = await getDoc(serverRef);
 
       if (!serverSnap.exists()) {
-        Alert.alert("Ошибка", "Сервер не найден");
+        Alert.alert(i18n.t("error"), i18n.t("server_not_found") || "Сервер не найден");
         return;
       }
 
       const serverData = serverSnap.data();
 
-      // 2. Добавляем себя в список участников ОРИГИНАЛЬНОГО сервера
       await updateDoc(serverRef, {
         members: arrayUnion(userId),
       });
 
-      // 3. СОЗДАЕМ КОПИЮ СЕРВЕРА ДЛЯ ВАШЕГО СПИСКА
       await addDoc(collection(db, "servers"), {
         ...serverData,
-        userId: userId, // <-- Теперь владелец - вы
-        originalServerId: notification.serverId, // Ссылка на оригинал
+        userId: userId,
+        originalServerId: notification.serverId,
         joinedAt: new Date(),
       });
 
-      // 4. Удаляем уведомление
       await deleteDoc(doc(db, "notifications", notification.id));
 
       Alert.alert(
-        t({ ru: "Успех", en: "Success", es: "Éxito", fr: "Succès", de: "Erfolg" }), 
-        t({ 
-          ru: `Вы присоединились к серверу "${notification.serverName}"`,
-          en: `You joined the server "${notification.serverName}"`,
-          es: `Te uniste al servidor "${notification.serverName}"`,
-          fr: `Vous avez rejoint le serveur "${notification.serverName}"`,
-          de: `Du bist dem Server "${notification.serverName}" beigetreten`
-        })
+        i18n.t("success") || "Успех", 
+        i18n.t("joined_server") 
+          ? `${i18n.t("joined_server")} "${notification.serverName}"`
+          : `Вы присоединились к серверу "${notification.serverName}"`
       );
       router.push("/workshop");
     } catch (error) {
       console.log(error);
       Alert.alert(
-        t({ ru: "Ошибка", en: "Error", es: "Error", fr: "Erreur", de: "Fehler" }), 
-        t({ 
-          ru: "Не удалось принять приглашение",
-          en: "Could not accept invitation",
-          es: "No se pudo aceptar la invitación",
-          fr: "Impossible d'accepter l'invitation",
-          de: "Einladung konnte nicht angenommen werden"
-        })
+        i18n.t("error"), 
+        i18n.t("error_accept_invite") || "Не удалось принять приглашение"
       );
     }
   };
@@ -191,28 +170,14 @@ export default function NotificationsScreen() {
               style={styles.menuItem}
               onPress={() => setShowMenu(false)}
             >
-              <Text style={styles.menuItemText}>
-                {t({
-                  ru: "Отметить все прочитанными",
-                  en: "Mark all as read",
-                  es: "Marcar todo como leído",
-                  fr: "Tout marquer comme lu",
-                  de: "Alle als gelesen markieren"
-                })}
-              </Text>
+              <Text style={styles.menuItemText}>{i18n.t("mark_all_read")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => setShowMenu(false)}
             >
               <Text style={[styles.menuItemText, { color: "#FF453A" }]}>
-                {t({
-                  ru: "Очистить уведомления",
-                  en: "Clear notifications",
-                  es: "Borrar notificaciones",
-                  fr: "Effacer les notifications",
-                  de: "Benachrichtigungen löschen"
-                })}
+                {i18n.t("clear_notifications")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -231,9 +196,7 @@ export default function NotificationsScreen() {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.backText}>
-            {t({ ru: "Назад", en: "Back", es: "Atrás", fr: "Retour", de: "Zurück" })}
-          </Text>
+          <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
         
         <View style={styles.logoContainer}>
@@ -244,9 +207,7 @@ export default function NotificationsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Title */}
         <View style={styles.titleRow}>
-          <Text style={styles.pageTitle}>
-            {t({ ru: "Уведомления", en: "Notifications", es: "Notificaciones", fr: "Notifications", de: "Benachrichtigungen" })}
-          </Text>
+          <Text style={styles.pageTitle}>{i18n.t("notifications")}</Text>
           <TouchableOpacity onPress={() => setShowMenu(!showMenu)}>
             <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
               <Circle cx={12} cy={12} r={1} fill={COLORS.textSub} />
@@ -268,16 +229,10 @@ export default function NotificationsScreen() {
                 </View>
                 <View>
                   <Text style={styles.requestName}>
-                    {req.fromName || t({ ru: "Пользователь", en: "User", es: "Usuario", fr: "Utilisateur", de: "Benutzer" })}
+                    {req.fromName || i18n.t("user")}
                   </Text>
                   <Text style={styles.requestSub}>
-                    {t({
-                      ru: "Отправляет вам запрос дружбы",
-                      en: "Sent you a friend request",
-                      es: "Te envió una solicitud de amistad",
-                      fr: "Vous a envoyé une demande d'ami",
-                      de: "Hat dir eine Freundschaftsanfrage gesendet"
-                    })}
+                    {i18n.t("friend_request")}
                   </Text>
                 </View>
               </View>
@@ -290,43 +245,25 @@ export default function NotificationsScreen() {
                 style={[styles.btnAccept, { backgroundColor: COLORS.indigo }]}
                 onPress={() => handleRequest(req.id, "accepted")}
               >
-                <Text style={styles.btnAcceptText}>
-                  {t({ ru: "Принять", en: "Accept", es: "Aceptar", fr: "Accepter", de: "Annehmen" })}
-                </Text>
+                <Text style={styles.btnAcceptText}>{i18n.t("accept")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.btnIgnore}
                 onPress={() => handleRequest(req.id, "declined")}
               >
-                <Text style={styles.btnIgnoreText}>
-                  {t({ ru: "Игнорировать", en: "Ignore", es: "Ignorar", fr: "Ignorer", de: "Ignorieren" })}
-                </Text>
+                <Text style={styles.btnIgnoreText}>{i18n.t("ignore")}</Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
 
-        <Text style={styles.sectionTitle}>
-          {t({
-            ru: "Недавняя активность",
-            en: "Recent activity",
-            es: "Actividad reciente",
-            fr: "Activité récente",
-            de: "Letzte Aktivität"
-          })}
-        </Text>
+        <Text style={styles.sectionTitle}>{i18n.t("recent_activity")}</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.purple} style={{ marginTop: 20 }} />
         ) : notifications.length === 0 ? (
           <Text style={{ color: COLORS.textSub, textAlign: "center", marginTop: 20 }}>
-            {t({
-              ru: "У вас пока нет уведомлений",
-              en: "You have no notifications yet",
-              es: "Aún no tienes notificaciones",
-              fr: "Vous n'avez pas encore de notifications",
-              de: "Sie haben noch keine Benachrichtigungen"
-            })}
+            {i18n.t("no_notifications") || "У вас пока нет уведомлений"}
           </Text>
         ) : (
           notifications.map((notif) => (
@@ -349,7 +286,7 @@ export default function NotificationsScreen() {
               <View style={styles.activityContent}>
                 <View style={styles.activityHeader}>
                   <Text style={styles.activityText}>
-                    {notif.title || t({ ru: "Новое уведомление", en: "New notification", es: "Nueva notificación", fr: "Nouvelle notification", de: "Neue Benachrichtigung" })}
+                    {notif.title || i18n.t("new_notification") || "Новое уведомление"}
                   </Text>
                 </View>
                 <View style={styles.quoteBlock}>
@@ -363,17 +300,13 @@ export default function NotificationsScreen() {
                       style={styles.acceptBtn}
                       onPress={() => handleAcceptInvite(notif)}
                     >
-                      <Text style={styles.acceptBtnText}>
-                        {t({ ru: "Принять", en: "Accept", es: "Aceptar", fr: "Accepter", de: "Annehmen" })}
-                      </Text>
+                      <Text style={styles.acceptBtnText}>{i18n.t("accept")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.declineBtn}
                       onPress={() => deleteNotification(notif.id)}
                     >
-                      <Text style={styles.declineBtnText}>
-                        {t({ ru: "Отклонить", en: "Decline", es: "Rechazar", fr: "Refuser", de: "Ablehnen" })}
-                      </Text>
+                      <Text style={styles.declineBtnText}>{i18n.t("decline") || "Отклонить"}</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -435,8 +368,6 @@ const styles = StyleSheet.create({
   menu: { position: "absolute", top: 60, right: 16, backgroundColor: COLORS.card, borderRadius: 12, padding: 8, width: 200, borderWidth: 1, borderColor: COLORS.border, zIndex: 50 },
   menuItem: { paddingVertical: 12, paddingHorizontal: 16 },
   menuItemText: { color: "#FFF", fontSize: 14 },
-  
-  // Новые стили для кнопок приглашения на сервер
   inviteButtonsRow: {
     flexDirection: "row",
     gap: 10,

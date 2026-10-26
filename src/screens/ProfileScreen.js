@@ -24,6 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../context/AppContext";
 import { auth, db } from "../firebase/config";
 import i18n from "../i18n";
+import { AnimatedLogo } from "../components/AnimatedLogo"; 
 
 export const ProfileScreen = () => {
   const router = useRouter();
@@ -51,7 +52,6 @@ export const ProfileScreen = () => {
     return unsubscribe;
   }, []);
 
-  // Синхронизируем статус из Firestore при загрузке
   useEffect(() => {
     if (userData?.status) {
       setCustomStatus(userData.status);
@@ -63,7 +63,7 @@ export const ProfileScreen = () => {
       await signOut(auth);
       router.replace("/");
     } catch (error) {
-      Alert.alert(i18n.t("error"), "Не удалось выйти из аккаунта");
+      Alert.alert(i18n.t("error"), i18n.t("error_logout") || "Не удалось выйти из аккаунта");
     }
   };
 
@@ -78,7 +78,7 @@ export const ProfileScreen = () => {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.2, // Сжимаем для Base64
+        quality: 0.2,
       });
       if (!result.canceled) {
         const uri = result.assets[0].uri;
@@ -86,7 +86,7 @@ export const ProfileScreen = () => {
         await updateAvatar(uri);
       }
     } catch (error) {
-      Alert.alert("Ошибка", "Не удалось получить доступ к галерее.");
+      Alert.alert(i18n.t("error"), i18n.t("error_gallery_access") || "Не удалось получить доступ к галерее.");
     }
   };
 
@@ -98,27 +98,23 @@ export const ProfileScreen = () => {
 
   const handleSaveChanges = async () => {
     if (tempName.trim() === "") {
-      Alert.alert("Ошибка", "Имя не может быть пустым.");
+      Alert.alert(i18n.t("error"), i18n.t("error_name_empty") || "Имя не может быть пустым.");
       return;
     }
 
     try {
-      // Обновляем имя в Firebase Auth
       if (user) {
         await updateProfile(user, { displayName: tempName.trim() });
       }
-
-      // Обновляем имя и статус в Firestore
       await updateDoc(doc(db, "users", user.uid), {
         displayName: tempName.trim(),
         status: tempStatus.trim(),
       });
-
       setCustomStatus(tempStatus.trim());
       setIsEditModalVisible(false);
     } catch (error) {
       console.log(error);
-      Alert.alert("Ошибка", "Не удалось сохранить изменения");
+      Alert.alert(i18n.t("error"), i18n.t("error_save_changes") || "Не удалось сохранить изменения");
     }
   };
 
@@ -137,30 +133,26 @@ export const ProfileScreen = () => {
         : primary
       : primary;
 
-  // Достаем реальные данные пользователя
-  const displayName = user.displayName || "Пользователь";
+  const displayName = user.displayName || i18n.t("user");
   const emailOrUsername = user.email ? user.email.split("@")[0] : "user";
-
-  // Форматируем реальную дату регистрации
   const joinDate = user.metadata?.creationTime
-    ? new Date(user.metadata.creationTime).toLocaleDateString("ru-RU", {
+    ? new Date(user.metadata.creationTime).toLocaleDateString(i18n.locale === "ru" ? "ru-RU" : "en-US", {
         day: "numeric",
         month: "long",
         year: "numeric",
       })
-    : "Недавно";
+    : i18n.t("recently") || "Недавно";
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={20} color="#FFF" />
           <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
-        <View style={styles.orbitIndicator}>
-          <MaterialCommunityIcons name="orbit" size={16} color={primary} />
-          <Text style={styles.orbitText}>ORDET</Text>
+        
+        <View style={styles.logoContainer}>
+          <AnimatedLogo size={28} />
         </View>
       </View>
 
@@ -175,7 +167,6 @@ export const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Profile Info Row */}
         <View style={styles.profileRow}>
           <TouchableOpacity
             style={[styles.avatarContainer, { borderColor: frameColor }]}
@@ -210,19 +201,17 @@ export const ProfileScreen = () => {
             <View style={styles.statusRow}>
               <Feather name="clock" size={14} color="#8E8E93" />
               <Text style={styles.customStatusText} numberOfLines={1}>
-                {customStatus || "Статус не установлен"}
+                {customStatus || i18n.t("status_not_set") || "Статус не установлен"}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Name & Username */}
         <Text style={styles.displayName}>{displayName}</Text>
         <View style={styles.usernameRow}>
           <Text style={styles.usernameText}>@{emailOrUsername}</Text>
         </View>
 
-        {/* Edit Button */}
         <TouchableOpacity
           style={[styles.editButton, { backgroundColor: primary }]}
           onPress={openEditModal}
@@ -231,7 +220,6 @@ export const ProfileScreen = () => {
           <Text style={styles.editButtonText}>{i18n.t("edit_profile")}</Text>
         </TouchableOpacity>
 
-        {/* Frames Button (Premium only) */}
         {isPremium && (
           <TouchableOpacity
             style={styles.framesButton}
@@ -243,7 +231,6 @@ export const ProfileScreen = () => {
           </TouchableOpacity>
         )}
 
-        {/* Tabs */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[
@@ -257,7 +244,7 @@ export const ProfileScreen = () => {
                 activeTab === "main" ? styles.tabTextActive : styles.tabText
               }
             >
-              Главное
+              {i18n.t("main_tab") || "Главное"}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -272,19 +259,17 @@ export const ProfileScreen = () => {
                 activeTab === "wishlist" ? styles.tabTextActive : styles.tabText
               }
             >
-              Вишлист
+              {i18n.t("wishlist") || "Вишлист"}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Main Tab Content */}
         {activeTab === "main" && (
           <>
-            {/* Balance (Убрали фейковый 800) */}
             <View style={styles.balanceCard}>
               <View style={styles.balanceLeft}>
                 <FontAwesome5 name="gem" size={20} color="#8A56FF" />
-                <Text style={styles.balanceLabel}>Баланс Orbit</Text>
+                <Text style={styles.balanceLabel}>{i18n.t("balance") || "Баланс Orbit"}</Text>
               </View>
               <View style={styles.balanceRight}>
                 <Text style={styles.balanceValue}>0</Text>
@@ -292,18 +277,16 @@ export const ProfileScreen = () => {
               </View>
             </View>
 
-            {/* Date */}
-            <Text style={styles.metaLabel}>В числе участников с</Text>
+            <Text style={styles.metaLabel}>{i18n.t("member_since")}</Text>
             <View style={styles.metaRow}>
               <Feather name="calendar" size={16} color="#8E8E93" />
               <Text style={styles.metaText}>{joinDate}</Text>
             </View>
 
-            {/* Friends & Note */}
             <View style={styles.listContainer}>
               <TouchableOpacity style={styles.listItem}>
                 <Feather name="users" size={20} color="#FFF" />
-                <Text style={styles.listText}>Друзья</Text>
+                <Text style={styles.listText}>{i18n.t("friends")}</Text>
                 <Ionicons
                   name="chevron-forward"
                   size={20}
@@ -315,8 +298,8 @@ export const ProfileScreen = () => {
               <TouchableOpacity style={styles.listItem}>
                 <Feather name="file-text" size={20} color="#FFF" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.listText}>Заметка</Text>
-                  <Text style={styles.listSub}>Видна только вам</Text>
+                  <Text style={styles.listText}>{i18n.t("note")}</Text>
+                  <Text style={styles.listSub}>{i18n.t("note_private")}</Text>
                 </View>
                 <Feather name="plus" size={20} color="#8E8E93" />
               </TouchableOpacity>
@@ -324,14 +307,12 @@ export const ProfileScreen = () => {
           </>
         )}
 
-        {/* Wishlist Tab Content */}
         {activeTab === "wishlist" && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>Вишлист пуст</Text>
+            <Text style={styles.emptyStateText}>{i18n.t("wishlist_empty") || "Вишлист пуст"}</Text>
           </View>
         )}
 
-        {/* Logout */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#FF453A" />
           <Text style={styles.logoutText}>{i18n.t("logout")}</Text>
@@ -345,24 +326,24 @@ export const ProfileScreen = () => {
         transparent={true}
       >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Редактировать профиль</Text>
+          <Text style={styles.modalTitle}>{i18n.t("edit_profile")}</Text>
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>ИМЯ</Text>
+            <Text style={styles.inputLabel}>{i18n.t("name").toUpperCase()}</Text>
             <TextInput
               style={styles.textInput}
               value={tempName}
               onChangeText={setTempName}
-              placeholder="Введите имя"
+              placeholder={i18n.t("enter_name") || "Введите имя"}
               placeholderTextColor="#656469"
             />
           </View>
           <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>СТАТУС</Text>
+            <Text style={styles.inputLabel}>{i18n.t("status") ? i18n.t("status").toUpperCase() : "СТАТУС"}</Text>
             <TextInput
               style={styles.textInput}
               value={tempStatus}
               onChangeText={setTempStatus}
-              placeholder="Введите статус"
+              placeholder={i18n.t("enter_status") || "Введите статус"}
               placeholderTextColor="#656469"
             />
           </View>
@@ -370,13 +351,13 @@ export const ProfileScreen = () => {
             style={[styles.saveBtn, { backgroundColor: primary }]}
             onPress={handleSaveChanges}
           >
-            <Text style={styles.saveBtnText}>Сохранить</Text>
+            <Text style={styles.saveBtnText}>{i18n.t("save")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={() => setIsEditModalVisible(false)}
           >
-            <Text style={styles.closeBtnText}>Отмена</Text>
+            <Text style={styles.closeBtnText}>{i18n.t("cancel")}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -399,7 +380,7 @@ export const ProfileScreen = () => {
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.dragHandle} />
-            <Text style={styles.bottomSheetTitle}>Выберите рамку</Text>
+            <Text style={styles.bottomSheetTitle}>{i18n.t("choose_frame")}</Text>
 
             <View style={styles.framesGrid}>
               {["default", "gold", "purple", "green", "fire"].map((frame) => {
@@ -418,16 +399,7 @@ export const ProfileScreen = () => {
                     ? "#4ADE80"
                     : "#FF4500";
 
-                const frameTitle =
-                  frame === "default"
-                    ? "Стандарт"
-                    : frame === "gold"
-                    ? "Золото"
-                    : frame === "purple"
-                    ? "Фиолет"
-                    : frame === "green"
-                    ? "Зеленый"
-                    : "Огонь";
+                const frameKey = `frame_${frame}`;
 
                 return (
                   <TouchableOpacity
@@ -485,7 +457,7 @@ export const ProfileScreen = () => {
                         },
                       ]}
                     >
-                      {frameTitle}
+                      {i18n.t(frameKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -510,12 +482,9 @@ const styles = StyleSheet.create({
   },
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#FFF", fontSize: 14, marginLeft: 4 },
-  orbitIndicator: { flexDirection: "row", alignItems: "center", gap: 4 },
-  orbitText: {
-    color: "#FFF",
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1,
+  logoContainer: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollContainer: { paddingHorizontal: 20, paddingBottom: 40 },
   titleRow: {
@@ -525,7 +494,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   pageTitle: { fontSize: 28, fontWeight: "400", color: "#FFF" },
-
   profileRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
   avatarContainer: {
     width: 72,
@@ -569,7 +537,6 @@ const styles = StyleSheet.create({
   },
   statusLabel: { color: "#4ADE80", fontSize: 12, fontWeight: "500" },
   customStatusText: { color: "#8E8E93", fontSize: 12, flex: 1 },
-
   displayName: {
     color: "#FFF",
     fontSize: 26,
@@ -578,7 +545,6 @@ const styles = StyleSheet.create({
   },
   usernameRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   usernameText: { color: "#8E8E93", fontSize: 14 },
-
   editButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -589,7 +555,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editButtonText: { color: "#FFF", fontSize: 15, fontWeight: "600" },
-
   framesButton: {
     backgroundColor: "#2C2C2E",
     padding: 12,
@@ -598,7 +563,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   framesButtonText: { fontSize: 14, fontWeight: "600" },
-
   tabsContainer: {
     flexDirection: "row",
     borderBottomWidth: 2,
@@ -616,7 +580,6 @@ const styles = StyleSheet.create({
   tabToggleActive: { borderBottomColor: "#7C6AFA" },
   tabText: { color: "#8E8E93", fontSize: 14, fontWeight: "500" },
   tabTextActive: { color: "#FFF", fontSize: 14, fontWeight: "600" },
-
   balanceCard: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -631,7 +594,6 @@ const styles = StyleSheet.create({
   balanceRight: { flexDirection: "row", alignItems: "baseline", gap: 4 },
   balanceValue: { color: "#FFF", fontSize: 22, fontWeight: "bold" },
   balanceCurrency: { color: "#8E8E93", fontSize: 12, fontWeight: "600" },
-
   metaLabel: { color: "#656469", fontSize: 12, marginBottom: 8 },
   metaRow: {
     flexDirection: "row",
@@ -640,7 +602,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   metaText: { color: "#FFF", fontSize: 14 },
-
   listContainer: {
     backgroundColor: "#1C1B22",
     borderRadius: 16,
@@ -656,7 +617,6 @@ const styles = StyleSheet.create({
   listText: { color: "#FFF", fontSize: 15, fontWeight: "500" },
   listSub: { color: "#8E8E93", fontSize: 12, marginTop: 2 },
   divider: { height: 1, backgroundColor: "#2C2C2E", marginLeft: 44 },
-
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -671,11 +631,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 8,
   },
-
   emptyState: { alignItems: "center", padding: 40 },
   emptyStateText: { color: "#656469", fontSize: 14 },
-
-  // ---------- Edit Modal ----------
   modalContainer: {
     flex: 1,
     backgroundColor: "#0F0E13",
@@ -713,8 +670,6 @@ const styles = StyleSheet.create({
   saveBtnText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
   closeBtn: { padding: 14, alignItems: "center" },
   closeBtnText: { color: "#656469", fontSize: 15 },
-
-  // ---------- Frames Bottom Sheet ----------
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.65)",

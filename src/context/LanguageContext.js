@@ -8,10 +8,9 @@ export const LanguageProvider = ({ children }) => {
   const [lang, setLang] = useState("ru");
   const [isReady, setIsReady] = useState(false);
 
-  // При запуске проверяем сохраненный язык
   useEffect(() => {
     AsyncStorage.getItem("appLanguage").then((saved) => {
-      if (saved) {
+      if (saved && i18n.translations[saved]) {
         setLang(saved);
         i18n.locale = saved;
       }
@@ -19,18 +18,26 @@ export const LanguageProvider = ({ children }) => {
     });
   }, []);
 
-  // Функция смены языка
   const changeLanguage = async (newLang) => {
-    i18n.locale = newLang; // Меняем в словаре
-    setLang(newLang);      // Обновляем состояние (вызовет перерисовку)
-    await AsyncStorage.setItem("appLanguage", newLang); // Сохраняем
+    // Приводим UK и US к en
+    const finalLang = (newLang === "uk" || newLang === "us") ? "en" : newLang;
+    
+    // Меняем в i18n и стейте
+    i18n.locale = finalLang;
+    setLang(finalLang);
+
+    try {
+      await AsyncStorage.setItem("appLanguage", finalLang);
+    } catch (e) {
+      console.log("Ошибка сохранения языка", e);
+    }
   };
 
   if (!isReady) return null;
 
   return (
     <LanguageContext.Provider value={{ lang, changeLanguage }}>
-      {/* key={lang} — магия, которая заставляет React мгновенно обновить текст на всех экранах */}
+      {/* key={lang} заставит React перерисовать все экраны при смене языка */}
       <React.Fragment key={lang}>
         {children}
       </React.Fragment>

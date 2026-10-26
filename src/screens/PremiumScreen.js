@@ -16,7 +16,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { COLORS } from "../theme/colors";
-import i18n from "../i18n";
+import i18n from "../i18n"; // <-- ДОБАВИЛИ ИМПОРТ ПЕРЕВОДОВ
 import { useApp } from "../context/AppContext";
 
 export const PremiumScreen = () => {
@@ -28,7 +28,6 @@ export const PremiumScreen = () => {
     else router.replace("/settings");
   };
 
-  // Функция перехода на оплату
   const goToPayment = (plan) => {
     router.push({ pathname: "/payment", params: { plan } });
   };
@@ -54,10 +53,10 @@ export const PremiumScreen = () => {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Orbit Premium</Text>
+        <Text style={styles.title}>{i18n.t("premium")}</Text>
         <Text style={styles.subtitle}>{i18n.t("premium_subtitle")}</Text>
 
-        {/* Basic Card — градиент сверху вниз */}
+        {/* Basic Card */}
         <LinearGradient
           colors={["#2D5A9E", "#0F1F38"]}
           start={{ x: 0.5, y: 0 }}
@@ -86,7 +85,6 @@ export const PremiumScreen = () => {
               <Text style={styles.featureText}>{i18n.t("badge")}</Text>
             </View>
           </View>
-          {/* ИСПРАВЛЕНО: добавлен onPress */}
           <TouchableOpacity
             style={styles.selectBtn}
             onPress={() => goToPayment("basic")}
@@ -95,7 +93,7 @@ export const PremiumScreen = () => {
           </TouchableOpacity>
         </LinearGradient>
 
-        {/* Pro Card — градиент сверху вниз */}
+        {/* Pro Card */}
         <LinearGradient
           colors={["#6B3FA0", "#1E0F32"]}
           start={{ x: 0.5, y: 0 }}
@@ -127,7 +125,6 @@ export const PremiumScreen = () => {
               <Text style={styles.featureText}>{i18n.t("avatar")}</Text>
             </View>
           </View>
-          {/* ИСПРАВЛЕНО: добавлен onPress */}
           <TouchableOpacity
             style={styles.selectBtn}
             onPress={() => goToPayment("pro")}
@@ -136,7 +133,6 @@ export const PremiumScreen = () => {
           </TouchableOpacity>
         </LinearGradient>
 
-        {/* Нижняя надпись */}
         <Text style={styles.footerText}>{i18n.t("autorenewal")}</Text>
       </ScrollView>
     </SafeAreaView>
@@ -162,7 +158,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 1,
   },
-
   scrollContainer: { paddingHorizontal: 24, paddingBottom: 40 },
   title: { fontSize: 32, fontWeight: "400", color: "#FFF", marginBottom: 8 },
   subtitle: {
@@ -171,7 +166,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
-
   cardBasic: {
     borderRadius: 20,
     padding: 20,
@@ -189,7 +183,6 @@ const styles = StyleSheet.create({
     borderWidth: 40,
     borderColor: "rgba(255,255,255,0.05)",
   },
-
   cardPro: {
     borderRadius: 20,
     padding: 20,
@@ -207,7 +200,6 @@ const styles = StyleSheet.create({
     borderWidth: 40,
     borderColor: "rgba(255,255,255,0.05)",
   },
-
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -223,7 +215,6 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
   maxBadgeText: { color: "#FFF", fontSize: 10, fontWeight: "600" },
-
   price: {
     color: "#FFF",
     fontSize: 32,
@@ -232,7 +223,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   priceSub: { fontSize: 14, fontWeight: "400", color: "rgba(255,255,255,0.7)" },
-
   featuresRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -242,7 +232,6 @@ const styles = StyleSheet.create({
   },
   featureItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   featureText: { color: "#FFF", fontSize: 12, opacity: 0.8 },
-
   selectBtn: {
     backgroundColor: "#FFF",
     height: 48,
@@ -252,7 +241,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   selectBtnText: { color: "#000", fontSize: 16, fontWeight: "600" },
-
   footerText: {
     color: "#666",
     fontSize: 12,

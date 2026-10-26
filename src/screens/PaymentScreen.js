@@ -20,7 +20,7 @@ import { useApp } from "../context/AppContext";
 export const PaymentScreen = () => {
   const router = useRouter();
   const { plan } = useLocalSearchParams();
-  const { activatePremium, language } = useApp(); // <-- Берем функцию активации
+  const { activatePremium, language } = useApp();
 
   const isPro = plan === "pro";
   const price = isPro ? "899₽" : "199₽";
@@ -35,7 +35,6 @@ export const PaymentScreen = () => {
     else router.replace("/premium");
   };
 
-  // Маска номера карты
   const handleCardNumberChange = (text) => {
     let cleaned = text.replace(/\D/g, "");
     let formatted = "";
@@ -46,7 +45,6 @@ export const PaymentScreen = () => {
     setCardNumber(formatted.slice(0, 19));
   };
 
-  // Маска срока действия
   const handleExpiryChange = (text) => {
     let cleaned = text.replace(/\D/g, "");
     if (cleaned.length >= 2) {
@@ -56,24 +54,20 @@ export const PaymentScreen = () => {
   };
 
   const handlePay = async () => {
-    // Валидация
     if (cardNumber.replace(/\s/g, "").length !== 16) {
-      Alert.alert(i18n.t("error"), "Введите 16 цифр номера карты");
+      Alert.alert(i18n.t("error"), i18n.t("error_card_number") || "Введите 16 цифр номера карты");
       return;
     }
     if (expiry.length !== 5) {
-      Alert.alert(i18n.t("error"), "Введите срок действия в формате ММ/ГГ");
+      Alert.alert(i18n.t("error"), i18n.t("error_expiry") || "Введите срок действия в формате ММ/ГГ");
       return;
     }
     if (cvv.length !== 3) {
-      Alert.alert(i18n.t("error"), "Введите 3 цифры CVV");
+      Alert.alert(i18n.t("error"), i18n.t("error_cvv") || "Введите 3 цифры CVV");
       return;
     }
 
-    // Активируем Premium в Firebase
     await activatePremium(plan === "pro" ? "pro" : "basic");
-
-    // Переход на экран успеха
     router.replace({ pathname: "/success", params: { plan: planName, price } });
   };
 
@@ -103,7 +97,6 @@ export const PaymentScreen = () => {
           {i18n.t("payment_subtitle") || "Введите данные вашей карты"}
         </Text>
 
-        {/* Выбранный тариф */}
         <View
           style={[
             styles.planCard,
@@ -119,7 +112,6 @@ export const PaymentScreen = () => {
           </Text>
         </View>
 
-        {/* Форма */}
         <Text style={styles.label}>
           {i18n.t("card_number") || "Номер карты"}
         </Text>

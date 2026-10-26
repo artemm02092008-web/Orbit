@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { COLORS } from "../theme/colors";
 import { CustomButton } from "../components/CustomButton";
 import { AnimatedLogo } from "../components/AnimatedLogo";
+import i18n from "../i18n"; // <-- ДОБАВИЛИ ИМПОРТ ПЕРЕВОДОВ
 
 export const WelcomeScreen = () => {
   const router = useRouter();
@@ -38,32 +39,32 @@ export const WelcomeScreen = () => {
             {/* Content */}
             <View style={styles.content}>
               <View style={styles.logoContainer}>
-                {/* Убрали квадрат logoBackground, логотип теперь просто висит по центру */}
                 <AnimatedLogo size={140} />
               </View>
-              <Text style={styles.title}>Добро пожаловать{"\n"}в Orbit</Text>
+              <Text style={styles.title}>
+                {i18n.t("welcome_title") || "Добро пожаловать\nв Orbit"}
+              </Text>
               <Text style={styles.subtitle}>
-                Будьте ближе к своим.{"\n"}
-                Общайтесь, делитесь и оставайтесь на связи.
+                {i18n.t("welcome_subtitle") || "Будьте ближе к своим.\nОбщайтесь, делитесь и оставайтесь на связи."}
               </Text>
             </View>
 
             {/* Footer */}
             <View style={styles.footer}>
               <CustomButton
-                title="Войти в аккаунт"
+                title={i18n.t("login_button")}
                 variant="primary"
                 showArrow={true}
                 onPress={() => router.push("/login")}
               />
               <CustomButton
-                title="Зарегистрироваться"
+                title={i18n.t("register_button")}
                 variant="secondary"
                 onPress={() => router.push("/register")}
               />
               <View style={styles.disclaimerContainer}>
                 <Ionicons name="lock-closed-outline" size={12} color={COLORS.textMuted} />
-                <Text style={styles.disclaimerText}>Ваши данные — только ваши.</Text>
+                <Text style={styles.disclaimerText}>{i18n.t("disclaimer")}</Text>
               </View>
             </View>
           </ScrollView>
@@ -86,14 +87,11 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary, marginRight: 6 },
   orbitText: { color: COLORS.primary, fontSize: 14, fontWeight: "500" },
   content: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 40 },
-  
-  // Обновили контейнер для логотипа (убрали тени, так как квадрата больше нет)
   logoContainer: { 
     marginBottom: 40, 
     alignItems: "center", 
     justifyContent: "center" 
   },
-  
   title: { fontSize: 32, fontWeight: "400", color: COLORS.textPrimary, textAlign: "center", marginBottom: 16, lineHeight: 40 },
   subtitle: { fontSize: 14, color: COLORS.textSecondary, textAlign: "center", lineHeight: 20 },
   footer: { paddingBottom: Platform.OS === "ios" ? 10 : 20 },

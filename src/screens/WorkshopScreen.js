@@ -1,6 +1,6 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef, useState, useEffect } from "react"; // <-- ДОБАВИЛИ useEffect
+import { useRef, useState, useEffect } from "react";
 import {
   Alert,
   Image,
@@ -17,8 +17,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AnimatedLogo } from "../components/AnimatedLogo";
 import { useApp } from "../context/AppContext";
 import i18n from "../i18n";
-import { doc, onSnapshot } from "firebase/firestore"; // <-- ДОБАВИЛИ ИМПОРТ
-import { db } from "../firebase/config"; // <-- ДОБАВИЛИ ИМПОРТ
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase/config";
 
 export const WorkshopScreen = () => {
   const router = useRouter();
@@ -40,13 +40,11 @@ export const WorkshopScreen = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [channelType, setChannelType] = useState("general");
-  
-  // НОВОЕ: Стейт для реального количества участников
-  const [memberCount, setMemberCount] = useState(0); 
+
+  const [memberCount, setMemberCount] = useState(0);
 
   const primaryColor = themeColors?.primary || "#8A56FF";
 
-  // НОВОЕ: Слушаем изменения в базе, чтобы обновлять счетчик
   useEffect(() => {
     if (!activeServer?.id) {
       setMemberCount(0);
@@ -57,8 +55,7 @@ export const WorkshopScreen = () => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const members = data.members || [];
-        // Считаем количество участников + 1 (владелец)
-        setMemberCount(members.length + 1); 
+        setMemberCount(members.length + 1);
       }
     });
 
@@ -80,11 +77,6 @@ export const WorkshopScreen = () => {
 
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  const handleBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace("/");
   };
 
   const openCreateModal = (type) => {
@@ -127,11 +119,7 @@ export const WorkshopScreen = () => {
     <View style={{ flex: 1 }} {...panResponder.panHandlers}>
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={20} color="#FFF" />
-            <Text style={styles.backText}>{i18n.t("back")}</Text>
-          </TouchableOpacity>
-
+          <View />
           <View style={styles.orbitIndicator}>
             <AnimatedLogo size={20} />
             <Text style={styles.orbitText}>ORBIT</Text>
@@ -199,7 +187,6 @@ export const WorkshopScreen = () => {
                 </Text>
                 <View style={styles.serverStatus}>
                   <View style={styles.onlineDot} />
-                  {/* ЗАМЕНИЛИ СТАТИЧНЫЙ ТЕКСТ НА РЕАЛЬНОЕ ЧИСЛО */}
                   <Text style={styles.serverStatusText}>
                     {memberCount} {i18n.t("in_network")} · {memberCount}
                   </Text>
@@ -208,7 +195,6 @@ export const WorkshopScreen = () => {
               <Ionicons name="chevron-down" size={20} color="#FFF" />
             </TouchableOpacity>
 
-            {/* Кнопка приглашения */}
             <TouchableOpacity 
               style={styles.inviteButton}
               onPress={() => router.push({
@@ -234,7 +220,6 @@ export const WorkshopScreen = () => {
                 </View>
               ) : (
                 <>
-                  {/* ... секция info ... */}
                   <View style={styles.sectionHeader}>
                     <TouchableOpacity
                       style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
@@ -276,7 +261,6 @@ export const WorkshopScreen = () => {
                     </View>
                   )}
 
-                  {/* ... секция general ... */}
                   <View style={styles.sectionHeader}>
                     <TouchableOpacity
                       style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
@@ -318,7 +302,6 @@ export const WorkshopScreen = () => {
                     </View>
                   )}
 
-                  {/* ... секция voice ... */}
                   <View style={styles.sectionHeader}>
                     <TouchableOpacity
                       style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
@@ -455,7 +438,6 @@ export const WorkshopScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  // ... ваши стили ...
   safeArea: { flex: 1, backgroundColor: "#1A1A1E" },
   header: {
     flexDirection: "row",

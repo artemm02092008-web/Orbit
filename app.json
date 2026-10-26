@@ -3,7 +3,7 @@
     "name": "OrbitFinal",
     "slug": "OrbitFinal",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "orbitfinal",
     "userInterfaceStyle": "automatic",

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,10 +10,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // <-- ИСПРАВЛЕН ИМПОРТ
 import Svg, { Path } from "react-native-svg";
 import { useApp } from "../context/AppContext";
 import { db } from "../firebase/config";
-import { AnimatedLogo } from "../components/AnimatedLogo"; // <-- ДОБАВИЛИ ИМПОРТ ЛОГОТИПА
+import { AnimatedLogo } from "../components/AnimatedLogo";
+import i18n from "../i18n"; // <-- ДОБАВИЛИ ИМПОРТ ПЕРЕВОДОВ
 
 const COLORS = {
   bg: "#0F0E13",
@@ -52,7 +53,7 @@ export default function MembersScreen({ onStartCall, onOpenChat, onBack }) {
 
   const filteredMembers = members.filter((member) => {
     const query = searchQuery.toLowerCase();
-    const name = member.displayName || "Пользователь";
+    const name = member.displayName || i18n.t("user");
     const email = member.email || "";
     return (
       name.toLowerCase().includes(query) || email.toLowerCase().includes(query)
@@ -61,7 +62,7 @@ export default function MembersScreen({ onStartCall, onOpenChat, onBack }) {
 
   const renderMemberRow = (member) => {
     const isMe = member.id === userData?.uid || member.id === userData?.id;
-    const name = member.displayName || "Без имени";
+    const name = member.displayName || i18n.t("user");
     const emailName = member.email ? member.email.split("@")[0] : "user";
     const isOnline = true;
     const avatarImage = member.photoURL;
@@ -92,7 +93,7 @@ export default function MembersScreen({ onStartCall, onOpenChat, onBack }) {
                 isOwner ? { color: "#E6A23C" } : { color: COLORS.textMain },
               ]}
             >
-              {name} {isMe ? "(Вы)" : ""}
+              {name} {isMe ? `(${i18n.t("you") || "Вы"})` : ""}
             </Text>
             {isOwner ? (
               <Svg
@@ -159,26 +160,25 @@ export default function MembersScreen({ onStartCall, onOpenChat, onBack }) {
               strokeLinejoin="round"
             />
           </Svg>
-          <Text style={styles.backText}>Назад</Text>
+          <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
         
-        {/* ЗАМЕНИЛИ ТЕКСТ OPIUM НА ЛОГОТИП */}
         <View style={styles.logoContainer}>
           <AnimatedLogo size={28} />
         </View>
       </View>
 
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>Участники</Text>
+        <Text style={styles.title}>{i18n.t("members_title")}</Text>
         <Text style={styles.subtitle}>
-          Всего в сети: {members.length} участников
+          {i18n.t("members_online")} {members.length}
         </Text>
       </View>
 
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Найти по имени или @username"
+          placeholder={i18n.t("members_search")}
           placeholderTextColor="#4E4D53"
           value={searchQuery}
           onChangeText={(text) => setSearchQuery(text)}
@@ -203,11 +203,11 @@ export default function MembersScreen({ onStartCall, onOpenChat, onBack }) {
                 marginTop: 20,
               }}
             >
-              Участники не найдены
+              {i18n.t("members_not_found")}
             </Text>
           ) : (
             <>
-              <Text style={styles.sectionTitle}>Все участники</Text>
+              <Text style={styles.sectionTitle}>{i18n.t("members_all")}</Text>
               {filteredMembers.map(renderMemberRow)}
             </>
           )}
@@ -228,13 +228,10 @@ const styles = StyleSheet.create({
   },
   backButton: { flexDirection: "row", alignItems: "center" },
   backText: { color: "#A3A2A8", fontSize: 16, marginLeft: 4 },
-  
-  // Стиль для контейнера логотипа
   logoContainer: {
     justifyContent: "center",
     alignItems: "center",
   },
-
   titleContainer: { paddingHorizontal: 16, marginTop: 8 },
   title: { fontSize: 28, fontWeight: "bold", color: COLORS.textMain },
   subtitle: { color: COLORS.textSub, fontSize: 13, marginTop: 4 },

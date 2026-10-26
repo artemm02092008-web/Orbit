@@ -17,10 +17,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { db } from "../firebase/config";
+import i18n from "../i18n"; // <-- ИМПОРТ ПЕРЕВОДОВ
 
 const COLORS = {
   bg: "#0F0E13",
@@ -83,7 +85,12 @@ export default function ChatScreen({
       await addDoc(collection(db, "messages"), newMessage);
     } catch (error) {
       console.log("Ошибка отправки:", error);
-      alert("Не удалось отправить сообщение");
+      Alert.alert(
+        i18n.t("error"), 
+        i18n.t("error_send_message") !== "error_send_message" 
+          ? i18n.t("error_send_message") 
+          : "Не удалось отправить сообщение"
+      );
     }
   };
 
@@ -91,19 +98,20 @@ export default function ChatScreen({
     router.replace("/workshop");
   };
 
-  // Убрали Modal, теперь это обычный View
+  const displayUserName = recipient.displayName || i18n.t("user") || "Пользователь";
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Шапка */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onClose}>
           <Ionicons name="chevron-back" size={24} color="#A3A2A8" />
-          <Text style={styles.backText}>Назад</Text>
+          <Text style={styles.backText}>{i18n.t("back")}</Text>
         </TouchableOpacity>
 
         <View style={styles.recipientInfo}>
           <Text style={styles.recipientName} numberOfLines={1}>
-            {recipient.displayName || "Пользователь"}
+            {displayUserName}
           </Text>
           <Text style={styles.recipientStatus} numberOfLines={1}>
             @{recipient.username || "user"}
@@ -134,10 +142,10 @@ export default function ChatScreen({
           {messages.length === 0 ? (
             <View style={styles.emptyStateContainer}>
               <Text style={styles.emptyStateTitle}>
-                Это начало вашей переписки
+                {i18n.t("chat_start")}
               </Text>
               <Text style={styles.emptyStateSubtitle}>
-                Напишите первое сообщение.
+                {i18n.t("chat_write_first")}
               </Text>
             </View>
           ) : (
@@ -181,7 +189,7 @@ export default function ChatScreen({
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Написать..."
+            placeholder={i18n.t("chat_placeholder") + "..."}
             placeholderTextColor="#4E4D53"
             value={text}
             onChangeText={setText}
